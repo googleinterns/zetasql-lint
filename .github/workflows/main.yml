@@ -12,22 +12,17 @@ on:
 jobs:
   # This workflow contains a two jobs.
   # The first checks the code's style. The second builds & tests the library.
-  check-style:
+  lint:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Setup Python
-      uses: actions/setup-python@v2
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
       with:
-        python-version: 2.7
-    
-    - name: Install clang-format
+        python-version: 3.7
+    - name: Install dependencies
       run: |
-        sudo apt-get install clang-format
-    
-    - name: Check style
-      run: |
-        "${GITHUB_WORKSPACE}/third_party/run_clang_format/run-clang-format.py" -r lib test third_party/spdk_defs
-
+        python -m pip install --upgrade pip
+        pip install -r cpplint
+    - name: Lint with cpplint
+      run: cpplint  --recursive .
