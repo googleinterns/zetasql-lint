@@ -30,7 +30,7 @@ class KeywordExtractor {
     KeywordExtractor(const zetasql::ASTNode *_node,
                      std::vector<const zetasql::ASTNode *> *_keywords)
         : node(_node),
-          keywords(_keywords) {};
+          keywords(_keywords) {}
     void extract();
 
  private:
