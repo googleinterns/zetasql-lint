@@ -1,5 +1,5 @@
 //
-// Copyright 2020 ZetaSQL Authors
+// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,11 @@
 #include "zetasql/parser/parse_tree_visitor.h"
 #include "zetasql/parser/parser.h"
 #include "zetasql/public/parse_helpers.h"
+
+namespace zetasql {
+
+namespace linter {
+
 
 absl::Status printASTTree(absl::string_view sql) {
     absl::Status return_status;
@@ -64,12 +69,12 @@ absl::Status checkLineLength(absl::string_view sql, int lineLimit,
         }
         if ( lineSize > lineLimit ) {
             return absl::Status(
-                /*FailedPreconditionError: */ absl::StatusCode(9),
+                absl::StatusCode::kFailedPrecondition,
                 absl::StrCat("Lines should be <= ", std::to_string(lineLimit),
                 " characters long [", std::to_string(lineNumber), ",1]") );
         }
     }
-    return absl::Status( /* Ok Status: */ absl::StatusCode(0), "" );
+    return absl::OkStatus();
 }
 
 void KeywordExtractor::extract() {
@@ -100,9 +105,12 @@ absl::Status checkUppercaseKeywords(absl::string_view sql) {
     for (const zetasql::ASTNode *keyword : *keywords) {
         if ( !allUpperCase(keyword) ) {
             return absl::Status(
-                /* FailedPreconditionError: */ absl::StatusCode(9), "");
+                absl::StatusCode::kFailedPrecondition, "");
         }
     }
 
-    return absl::Status( /* Ok Status: */ absl::StatusCode(0), "" );
+    return absl::OkStatus();
 }
+
+}  // namespace linter
+}  // namespace zetasql

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 ZetaSQL Authors
+// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,13 +18,18 @@
 
 #include "gtest/gtest.h"
 
+
+namespace zetasql {
+
+namespace linter {
+
 TEST(LinterTest, StatementLineLengthCheck) {
     const absl::string_view sql =
         "SELECT e, sum(f) FROM emp where b = a or c < d group by x";
 
-    EXPECT_EQ(checkLineLength(sql).ok(), 1);
-    EXPECT_EQ(checkLineLength(sql, 10).ok(), 0);
-    EXPECT_EQ(checkLineLength(sql, 10, ' ').ok(), 1);
+    EXPECT_TRUE(checkLineLength(sql).ok());
+    EXPECT_FALSE(checkLineLength(sql, 10).ok());
+    EXPECT_TRUE(checkLineLength(sql, 10, ' ').ok());
 }
 
 
@@ -33,15 +38,18 @@ TEST(LinterTest, StatementValidityCheck) {
 
     const absl::string_view invalid_sql = "SELECT 5+2 sss ddd";
 
-    EXPECT_EQ(checkStatement(valid_sql).ok(), 1);
-    EXPECT_EQ(checkStatement(invalid_sql).ok(), 0);
+    EXPECT_TRUE(checkStatement(valid_sql).ok());
+    EXPECT_FALSE(checkStatement(invalid_sql).ok());
 
-    EXPECT_EQ(checkStatement(
-        "SELECT * FROM emp where b = a or c < d group by x").ok(), 1);
+    EXPECT_TRUE(checkStatement(
+        "SELECT * FROM emp where b = a or c < d group by x").ok());
 
-    EXPECT_EQ(checkStatement(
-        "SELECT e, sum(f) FROM emp where b = a or c < d group by x").ok(), 1);
+    EXPECT_TRUE(checkStatement(
+        "SELECT e, sum(f) FROM emp where b = a or c < d group by x").ok());
 
-    EXPECT_EQ(checkStatement(
-        "SELET A FROM B\nSELECT C FROM D").ok(), 0);
+    EXPECT_FALSE(checkStatement(
+        "SELET A FROM B\nSELECT C FROM D").ok());
 }
+
+}  // namespace linter
+}  // namespace zetasql

@@ -1,5 +1,5 @@
 //
-// Copyright 2020 ZetaSQL Authors
+// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@
 #include "zetasql/parser/parser.h"
 #include "zetasql/public/parse_helpers.h"
 
+namespace zetasql {
+
+namespace linter {
+
 class KeywordExtractor {
  public:
     KeywordExtractor(const zetasql::ASTNode *_node,
@@ -46,5 +50,8 @@ absl::Status checkStatement(absl::string_view sql);
 // exceed a certain treshold
 absl::Status checkLineLength(absl::string_view sql, int lineLimit = 100,
     const char delimeter = '\n');
+
+}  // namespace linter
+}  // namespace zetasql
 
 #endif  // SRC_LINTER_H_
