@@ -50,9 +50,6 @@ absl::Status checkStatement(absl::string_view sql) {
         zetasql::ParserOptions(), &output);
 }
 
-void KeywordExtractor::extract() {
-    // TODO(orhan_uysal): Implement a keyword extractor.
-}
 
 absl::Status checkLineLength(absl::string_view sql, int lineLimit,
     const char delimeter) {
@@ -75,23 +72,37 @@ absl::Status checkLineLength(absl::string_view sql, int lineLimit,
     return absl::Status( /* Ok Status: */ absl::StatusCode(0), "" );
 }
 
+void KeywordExtractor::extract() {
+    // TODO(orhan_uysal): Implement a keyword extractor
+    // that pushes all keyword nodes to vector "keywords"
+}
+
+bool allUpperCase(const zetasql::ASTNode* x) {
+    // TODO(orhan_uysal): Implement a function checking
+    // if all characters in ASTNode(keyword node) is uppercase
+    return true;
+}
+
 absl::Status checkUppercaseKeywords(absl::string_view sql) {
-    zetasql::ParseTreeVisitor visitor;
-    int lineSize = 0;
-    int lineNumber = 1;
-    for (int i=0; i<static_cast<int>(sql.size()); i++) {
-        if ( sql[i] == delimeter ) {
-            lineSize = 0;
-            lineNumber++;
-        } else {
-            lineSize++;
-        }
-        if ( lineSize > lineLimit ) {
+    std::vector<const zetasql::ASTNode *> *keywords;
+    *keywords = std::vector<const zetasql::ASTNode *>();
+
+    std::unique_ptr<zetasql::ParserOutput> output;
+
+    absl::Status parser_status = zetasql::ParseStatement(sql,
+            zetasql::ParserOptions(), &output);
+
+    if ( !parser_status.ok() )
+        return parser_status;
+
+    // KeywordExtractor(output->statement(), keywords).extract();
+
+    for (const zetasql::ASTNode *keyword : *keywords) {
+        if ( !allUpperCase(keyword) ) {
             return absl::Status(
-                /*FailedPreconditionError: */ absl::StatusCode(9),
-                absl::StrCat("Lines should be <= ", std::to_string(lineLimit),
-                " characters long [", std::to_string(lineNumber), ",1]") );
+                /* FailedPreconditionError: */ absl::StatusCode(9), "");
         }
     }
+
     return absl::Status( /* Ok Status: */ absl::StatusCode(0), "" );
 }

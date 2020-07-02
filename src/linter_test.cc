@@ -45,12 +45,3 @@ TEST(LinterTest, StatementValidityCheck) {
     EXPECT_EQ(checkStatement(
         "SELET A FROM B\nSELECT C FROM D").ok(), 0);
 }
-
-TEST(LinterTest, StatementLineLengthCheck) {
-    const absl::string_view sql =
-        "SELECT e, sum(f) FROM emp where b = a or c < d group by x";
-
-    EXPECT_EQ(checkLineLength(sql).ok(), 1);
-    EXPECT_EQ(checkLineLength(sql, 10).ok(), 0);
-    EXPECT_EQ(checkLineLength(sql, 10, ' ').ok(), 1);
-}

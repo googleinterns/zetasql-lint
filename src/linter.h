@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef ZETASQL_LINT_SRC_LINTER_H_
-#define ZETASQL_LINT_SRC_LINTER_H_
+#ifndef SRC_LINTER_H_
+#define SRC_LINTER_H_
 
 #include <vector>
 
@@ -27,7 +27,7 @@
 
 class KeywordExtractor {
  public:
-    KeywordExtractor(zetasql::ASTNode *_node,
+    KeywordExtractor(const zetasql::ASTNode *_node,
                      std::vector<const zetasql::ASTNode *> *_keywords)
         : node(_node),
           keywords(_keywords) {};
@@ -47,4 +47,4 @@ absl::Status checkStatement(absl::string_view sql);
 absl::Status checkLineLength(absl::string_view sql, int lineLimit = 100,
     const char delimeter = '\n');
 
-#endif  // ZETASQL_LINT_SRC_LINTER_H_
+#endif  // SRC_LINTER_H_
