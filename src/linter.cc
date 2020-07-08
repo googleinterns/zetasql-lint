@@ -122,7 +122,8 @@ absl::Status checkSemicolon(absl::string_view sql) {
 
 bool allUpperCase(const absl::string_view &sql,
     const zetasql::ParseLocationRange &range) {
-    for (int i = range.start().GetByteOffset(); i < range.end().GetByteOffset(); i++) {
+    for (int i = range.start().GetByteOffset();
+                i < range.end().GetByteOffset(); i++) {
         if ( 'a' <= sql[i] && sql[i] <= 'z' )
             return false;
     }
@@ -140,15 +141,15 @@ absl::Status checkUppercaseKeywords(absl::string_view sql) {
     // Keyword Uppercase check will simply ignore characters
     // outside of english lowercase letters.
     for ( auto &token : parse_tokens ) {
-        if ( token.kind() == zetasql::ParseToken::KEYWORD ) {
-            if (!allUpperCase(sql, token.GetLocationRange())) {
-                return absl::Status(
-                    absl::StatusCode::kFailedPrecondition,
-                    absl::StrCat("All keywords should be Uppercase, In character ",
-                    std::to_string(token.GetLocationRange().start().GetByteOffset()),
-                    " string should be: ", token.GetSQL()));
-            }
+      if ( token.kind() == zetasql::ParseToken::KEYWORD ) {
+        if (!allUpperCase(sql, token.GetLocationRange())) {
+          return absl::Status(
+            absl::StatusCode::kFailedPrecondition,
+            absl::StrCat("All keywords should be Uppercase, In character ",
+            std::to_string(token.GetLocationRange().start().GetByteOffset()),
+            " string should be: ", token.GetSQL()));
         }
+      }
     }
 
     return absl::OkStatus();
@@ -200,11 +201,13 @@ absl::Status checkAliasKeyword(absl::string_view sql) {
     return ASTNodeRule([](const zetasql::ASTNode* node,
         absl::string_view sql) -> absl::Status {
         if (node->node_kind() == zetasql::AST_ALIAS) {
-            int position = node->GetParseLocationRange().start().GetByteOffset();
+            int position = node->GetParseLocationRange()
+                .start().GetByteOffset();
             if ( sql[position] != 'A' || sql[position+1] != 'S' ) {
                 return absl::Status(
                     absl::StatusCode::kFailedPrecondition,
-                    absl::StrCat("Always use AS keyword for referencing aliases, ",
+                    absl::StrCat(
+                    "Always use AS keyword for referencing aliases, ",
                     "In position: ", std::to_string(position)));
             }
         }
