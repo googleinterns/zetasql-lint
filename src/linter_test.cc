@@ -23,31 +23,17 @@
 
 #include "gtest/gtest.h"
 
+namespace zetasql::linter {
 
-namespace zetasql {
-
-namespace linter {
-
-TEST(LinterTest, DumperTest) {
-    const absl::string_view sql =
-        " -- comment 1\nSELECT 3+5;\n--comment 2\nSELECT 4+6";
-
-    const absl::string_view sql2 =
-        "SELECT memory From xpreia X;\nSELECT 4+6";
-
-    // printASTTree(sql);
-    // printASTTree(sql2);
-    // printASTTree(
-    //     "SELET A FROM B\nSELECT C FROM D");
-}
+namespace {
 
 TEST(LinterTest, StatementLineLengthCheck) {
     const absl::string_view sql =
         "SELECT e, sum(f) FROM emp where b = a or c < d group by x";
 
-    EXPECT_TRUE(checkLineLength(sql).ok());
-    EXPECT_FALSE(checkLineLength(sql, 10).ok());
-    EXPECT_TRUE(checkLineLength(sql, 10, ' ').ok());
+    EXPECT_TRUE(CheckLineLength(sql).ok());
+    EXPECT_FALSE(CheckLineLength(sql, 10).ok());
+    EXPECT_TRUE(CheckLineLength(sql, 10, ' ').ok());
 }
 
 TEST(LinterTest, StatementValidityCheck) {
@@ -55,16 +41,16 @@ TEST(LinterTest, StatementValidityCheck) {
 
     const absl::string_view invalid_sql = "SELECT 5+2 sss ddd";
 
-    EXPECT_TRUE(checkStatement(valid_sql).ok());
-    EXPECT_FALSE(checkStatement(invalid_sql).ok());
+    EXPECT_TRUE(CheckStatement(valid_sql).ok());
+    EXPECT_FALSE(CheckStatement(invalid_sql).ok());
 
-    EXPECT_TRUE(checkStatement(
+    EXPECT_TRUE(CheckStatement(
         "SELECT * FROM emp where b = a or c < d group by x").ok());
 
-    EXPECT_TRUE(checkStatement(
+    EXPECT_TRUE(CheckStatement(
         "SELECT e, sum(f) FROM emp where b = a or c < d group by x").ok());
 
-    EXPECT_FALSE(checkStatement(
+    EXPECT_FALSE(CheckStatement(
         "SELET A FROM B\nSELECT C FROM D").ok());
 }
 
@@ -78,10 +64,10 @@ TEST(LinterTest, SemicolonCheck) {
     const absl::string_view invalid_sql2 =
         "SELECT 3+5  ;  \nSELECT 4+6";
 
-    EXPECT_TRUE(checkSemicolon(valid_sql).ok());
-    EXPECT_FALSE(checkSemicolon(invalid_sql).ok());
-    EXPECT_TRUE(checkSemicolon(valid_sql2).ok());
-    EXPECT_FALSE(checkSemicolon(invalid_sql2).ok());
+    EXPECT_TRUE(CheckSemicolon(valid_sql).ok());
+    EXPECT_FALSE(CheckSemicolon(invalid_sql).ok());
+    EXPECT_TRUE(CheckSemicolon(valid_sql2).ok());
+    EXPECT_FALSE(CheckSemicolon(invalid_sql2).ok());
 }
 
 TEST(LinterTest, UppercaseKeywordCheck) {
@@ -90,8 +76,8 @@ TEST(LinterTest, UppercaseKeywordCheck) {
     const absl::string_view invalid_sql =
         "SELECT * FROM emp where b = a or c < d GROUP by x";
 
-    EXPECT_TRUE(checkUppercaseKeywords(valid_sql).ok());
-    EXPECT_FALSE(checkUppercaseKeywords(invalid_sql).ok());
+    EXPECT_TRUE(CheckUppercaseKeywords(valid_sql).ok());
+    EXPECT_FALSE(CheckUppercaseKeywords(invalid_sql).ok());
 }
 
 TEST(LinterTest, CommentTypeCheck) {
@@ -102,9 +88,17 @@ TEST(LinterTest, CommentTypeCheck) {
     const absl::string_view valid_sql2 =
         "--comment 1\nSELECT 3+5\n--comment 2";
 
-    EXPECT_TRUE(checkCommentType(valid_sql).ok());
-    EXPECT_FALSE(checkCommentType(invalid_sql).ok());
-    EXPECT_TRUE(checkCommentType(valid_sql2).ok());
+    const absl::string_view multiline_comment_sql =
+        "/* here is // and -- */SELECT 1+2 -- comment 2";
+
+    const absl::string_view multiline_string_sql =
+        "SELECT \"\"\"multiline\nstring--\nliteral\nhaving//--//\"\"\"";
+
+    EXPECT_TRUE(CheckCommentType(valid_sql).ok());
+    EXPECT_FALSE(CheckCommentType(invalid_sql).ok());
+    EXPECT_TRUE(CheckCommentType(valid_sql2).ok());
+    EXPECT_TRUE(CheckCommentType(multiline_comment_sql).ok());
+    EXPECT_TRUE(CheckCommentType(multiline_string_sql).ok());
 }
 
 TEST(LinterTest, AliasKeywordCheck) {
@@ -113,9 +107,9 @@ TEST(LinterTest, AliasKeywordCheck) {
     const absl::string_view invalid_sql =
         "SELECT * FROM emp X";
 
-    EXPECT_TRUE(checkAliasKeyword(valid_sql).ok());
-    EXPECT_FALSE(checkAliasKeyword(invalid_sql).ok());
+    EXPECT_TRUE(CheckAliasKeyword(valid_sql).ok());
+    EXPECT_FALSE(CheckAliasKeyword(invalid_sql).ok());
 }
 
-}  // namespace linter
-}  // namespace zetasql
+}  // namespace
+}  // namespace zetasql::linter

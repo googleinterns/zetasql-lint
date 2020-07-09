@@ -37,65 +37,57 @@ namespace linter {
 class RuleVisitor : public zetasql::NonRecursiveParseTreeVisitor {
  public:
     RuleVisitor(const std::function
-        <absl::Status(const zetasql::ASTNode*, absl::string_view)> &_rule,
-                const absl::string_view &_sql)
-        : rule(_rule), sql(_sql), result(absl::OkStatus()) {}
+        <absl::Status(const zetasql::ASTNode*, absl::string_view)> &rule,
+                const absl::string_view &sql)
+        : rule_(rule), sql_(sql), result_(absl::OkStatus()) {}
 
     zetasql_base::StatusOr<VisitResult> defaultVisit(
-        const ASTNode* node) override {
-        absl::Status rule_result = rule(node, sql);
-        if ( !rule_result.ok() ) {
-            // There may be multiple rule failures for now
-            // only the last failure will be shown.
-            result = rule_result;
-        }
-        return VisitResult::VisitChildren(node);
-    }
+        const ASTNode* node) override;
 
-    absl::Status getResult() { return result; }
+    absl::Status GetResult() { return result_; }
 
  private:
     std::function
-        <absl::Status(const zetasql::ASTNode*, absl::string_view)> rule;
-    absl::string_view sql;
-    absl::Status result;
+        <absl::Status(const zetasql::ASTNode*, absl::string_view)> rule_;
+    absl::string_view sql_;
+    absl::Status result_;
 };
 
 //
 class ASTNodeRule {
  public:
     explicit ASTNodeRule(const std::function
-        <absl::Status(const zetasql::ASTNode*, absl::string_view)> _rule)
-        : rule(_rule) {}
-    absl::Status applyTo(absl::string_view sql);
+        <absl::Status(const zetasql::ASTNode*, absl::string_view)> rule)
+        : rule_(rule) {}
+    absl::Status ApplyTo(absl::string_view sql);
  private:
     std::function
-        <absl::Status(const zetasql::ASTNode*, absl::string_view)> rule;
+        <absl::Status(const zetasql::ASTNode*, absl::string_view)> rule_;
 };
 
 // Debugger that will be erased later.
-absl::Status printASTTree(absl::string_view sql);
+absl::Status PrintASTTree(absl::string_view sql);
 
 // Checks if the number of characters in any line
 // exceed a certain treshold
-absl::Status checkLineLength(absl::string_view sql, int lineLimit = 100,
+absl::Status CheckLineLength(absl::string_view sql, int lineLimit = 100,
     const char delimeter = '\n');
 
 // Checks whether given sql statement is a valid
 // GoogleSql statement
-absl::Status checkStatement(absl::string_view sql);
+absl::Status CheckStatement(absl::string_view sql);
 
 // Checks whether every statement ends with a semicolon ';'
-absl::Status checkSemicolon(absl::string_view sql);
+absl::Status CheckSemicolon(absl::string_view sql);
 
 // Checks whether all keywords are uppercase
-absl::Status checkUppercaseKeywords(absl::string_view sql);
+absl::Status CheckUppercaseKeywords(absl::string_view sql);
 
 // Check if comment style is uniform (either -- or //, not both)
-absl::Status checkCommentType(absl::string_view sql);
+absl::Status CheckCommentType(absl::string_view sql);
 
 // Checks whether all aliases denoted by 'AS' keyword
-absl::Status checkAliasKeyword(absl::string_view sql);
+absl::Status CheckAliasKeyword(absl::string_view sql);
 
 }  // namespace linter
 }  // namespace zetasql
