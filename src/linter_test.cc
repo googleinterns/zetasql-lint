@@ -28,87 +28,67 @@ namespace zetasql::linter {
 namespace {
 
 TEST(LinterTest, StatementLineLengthCheck) {
-    const absl::string_view sql =
+    absl::string_view sql =
         "SELECT e, sum(f) FROM emp where b = a or c < d group by x";
+    absl::string_view multiline_sql =
+    "SELECT c\n"
+    "some long invalid sql statement that shouldn't stop check\n"
+    "SELECT t from G\n";
 
     EXPECT_TRUE(CheckLineLength(sql).ok());
     EXPECT_FALSE(CheckLineLength(sql, 10).ok());
     EXPECT_TRUE(CheckLineLength(sql, 10, ' ').ok());
+
+    EXPECT_TRUE(CheckLineLength(multiline_sql).ok());
+    EXPECT_FALSE(CheckLineLength(multiline_sql, 30).ok());
 }
 
 TEST(LinterTest, StatementValidityCheck) {
-    const absl::string_view valid_sql = "SELECT 5+2";
+    EXPECT_TRUE(CheckParserSucceeds("SELECT 5+2").ok());
+    EXPECT_FALSE(CheckParserSucceeds("SELECT 5+2 sss ddd").ok());
 
-    const absl::string_view invalid_sql = "SELECT 5+2 sss ddd";
-
-    EXPECT_TRUE(CheckStatement(valid_sql).ok());
-    EXPECT_FALSE(CheckStatement(invalid_sql).ok());
-
-    EXPECT_TRUE(CheckStatement(
+    EXPECT_TRUE(CheckParserSucceeds(
         "SELECT * FROM emp where b = a or c < d group by x").ok());
 
-    EXPECT_TRUE(CheckStatement(
+    EXPECT_TRUE(CheckParserSucceeds(
         "SELECT e, sum(f) FROM emp where b = a or c < d group by x").ok());
 
-    EXPECT_FALSE(CheckStatement(
+    EXPECT_FALSE(CheckParserSucceeds(
         "SELET A FROM B\nSELECT C FROM D").ok());
 }
 
 TEST(LinterTest, SemicolonCheck) {
-    const absl::string_view valid_sql =
-        "SELECT 3+5;\nSELECT 4+6;";
-    const absl::string_view invalid_sql =
-        "SELECT 3+5\nSELECT 4+6;";
-    const absl::string_view valid_sql2 =
-        "SELECT 3+5;  \nSELECT 4+6";
-    const absl::string_view invalid_sql2 =
-        "SELECT 3+5  ;  \nSELECT 4+6";
-
-    EXPECT_TRUE(CheckSemicolon(valid_sql).ok());
-    EXPECT_FALSE(CheckSemicolon(invalid_sql).ok());
-    EXPECT_TRUE(CheckSemicolon(valid_sql2).ok());
-    EXPECT_FALSE(CheckSemicolon(invalid_sql2).ok());
+    EXPECT_TRUE(CheckSemicolon("SELECT 3+5;\nSELECT 4+6;").ok());
+    EXPECT_FALSE(CheckSemicolon("SELECT 3+5\nSELECT 4+6;").ok());
+    EXPECT_TRUE(CheckSemicolon("SELECT 3+5;  \nSELECT 4+6").ok());
+    EXPECT_FALSE(CheckSemicolon("SELECT 3+5  ;  \nSELECT 4+6").ok());
 }
 
 TEST(LinterTest, UppercaseKeywordCheck) {
-    const absl::string_view valid_sql =
-        "SELECT * FROM emp WHERE b = a OR c < d GROUP BY x";
-    const absl::string_view invalid_sql =
-        "SELECT * FROM emp where b = a or c < d GROUP by x";
-
-    EXPECT_TRUE(CheckUppercaseKeywords(valid_sql).ok());
-    EXPECT_FALSE(CheckUppercaseKeywords(invalid_sql).ok());
+    EXPECT_TRUE(CheckUppercaseKeywords(
+        "SELECT * FROM emp WHERE b = a OR c < d GROUP BY x").ok());
+    EXPECT_FALSE(CheckUppercaseKeywords(
+        "SELECT * FROM emp where b = a or c < d GROUP by x").ok());
 }
 
 TEST(LinterTest, CommentTypeCheck) {
-    const absl::string_view valid_sql =
-        "//comment 1\nSELECT 3+5\n//comment 2";
-    const absl::string_view invalid_sql =
-        "//comment 1\nSELECT 3+5\n--comment 2";
-    const absl::string_view valid_sql2 =
-        "--comment 1\nSELECT 3+5\n--comment 2";
+    EXPECT_TRUE(CheckCommentType("//comment 1\nSELECT 3+5\n//comment 2").ok());
+    EXPECT_FALSE(CheckCommentType("//comment 1\nSELECT 3+5\n--comment 2").ok());
+    EXPECT_TRUE(CheckCommentType("--comment 1\nSELECT 3+5\n--comment 2").ok());
 
-    const absl::string_view multiline_comment_sql =
-        "/* here is // and -- */SELECT 1+2 -- comment 2";
+    // Check a sql containing a multiline comment.
+    EXPECT_TRUE(CheckCommentType(
+        "/* here is // and -- */SELECT 1+2 -- comment 2").ok());
 
-    const absl::string_view multiline_string_sql =
-        "SELECT \"\"\"multiline\nstring--\nliteral\nhaving//--//\"\"\"";
-
-    EXPECT_TRUE(CheckCommentType(valid_sql).ok());
-    EXPECT_FALSE(CheckCommentType(invalid_sql).ok());
-    EXPECT_TRUE(CheckCommentType(valid_sql2).ok());
-    EXPECT_TRUE(CheckCommentType(multiline_comment_sql).ok());
-    EXPECT_TRUE(CheckCommentType(multiline_string_sql).ok());
+    // Check multiline string literal
+    EXPECT_TRUE(CheckCommentType(
+        "SELECT \"\"\"multiline\nstring--\nliteral\nhaving//--//\"\"\"").ok());
 }
 
 TEST(LinterTest, AliasKeywordCheck) {
-    const absl::string_view valid_sql =
-        "SELECT * FROM emp AS X";
-    const absl::string_view invalid_sql =
-        "SELECT * FROM emp X";
-
-    EXPECT_TRUE(CheckAliasKeyword(valid_sql).ok());
-    EXPECT_FALSE(CheckAliasKeyword(invalid_sql).ok());
+    EXPECT_TRUE(CheckAliasKeyword("SELECT * FROM emp AS X").ok());
+    EXPECT_FALSE(CheckAliasKeyword("SELECT * FROM emp X").ok());
+    EXPECT_TRUE(CheckAliasKeyword("SELECT 1 AS one").ok());
 }
 
 }  // namespace

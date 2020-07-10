@@ -23,6 +23,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
 #include "zetasql/base/status.h"
+#include "zetasql/base/status_macros.h"
 #include "zetasql/parser/parse_tree_visitor.h"
 #include "zetasql/parser/parse_tree.h"
 #include "zetasql/parser/parser.h"
@@ -30,22 +31,21 @@
 #include "zetasql/public/parse_tokens.h"
 #include "zetasql/public/parse_resume_location.h"
 
-// Implemented rules in the same order with rules in the documention
-namespace zetasql {
+// Implemented rules in the same order with rules in the documention.
+namespace zetasql::linter {
 
-namespace linter {
-
+// This will eventually be erased.
 absl::Status PrintASTTree(absl::string_view sql) {
     absl::Status return_status;
-    std::unique_ptr<zetasql::ParserOutput> output;
+    std::unique_ptr<ParserOutput> output;
 
-    zetasql::ParseResumeLocation location =
-        zetasql::ParseResumeLocation::FromStringView(sql);
+    ParseResumeLocation location =
+        ParseResumeLocation::FromStringView(sql);
     bool is_the_end = false;
     int cnt = 0;
     while ( !is_the_end ) {
-        return_status = zetasql::ParseNextScriptStatement(
-            &location, zetasql::ParserOptions(), &output, &is_the_end);
+        return_status = ParseNextScriptStatement(
+            &location, ParserOptions(), &output, &is_the_end);
 
         std::cout << "Status for sql#" << ++cnt << ": \"" << sql << "\" = "
             << return_status.ToString() << std::endl;
@@ -80,49 +80,46 @@ absl::Status CheckLineLength(absl::string_view sql, int line_limit,
     return absl::OkStatus();
 }
 
-absl::Status CheckStatement(absl::string_view sql) {
-    absl::Status return_status = absl::OkStatus();
-    std::unique_ptr<zetasql::ParserOutput> output;
+absl::Status CheckParserSucceeds(absl::string_view sql) {
+    std::unique_ptr<ParserOutput> output;
 
-    zetasql::ParseResumeLocation location =
-        zetasql::ParseResumeLocation::FromStringView(sql);
+    ParseResumeLocation location =
+        ParseResumeLocation::FromStringView(sql);
 
     bool is_the_end = false;
-    while ( !is_the_end && return_status.ok() ) {
-        return_status = zetasql::ParseNextScriptStatement(
-            &location, zetasql::ParserOptions(), &output, &is_the_end);
+    while ( !is_the_end ) {
+        ZETASQL_RETURN_IF_ERROR(ParseNextScriptStatement(
+            &location, ParserOptions(), &output, &is_the_end));
     }
-    return return_status;
+    return absl::OkStatus();
 }
 
 absl::Status CheckSemicolon(absl::string_view sql) {
-    absl::Status return_status = absl::OkStatus();
-    std::unique_ptr<zetasql::ParserOutput> output;
+    std::unique_ptr<ParserOutput> output;
 
-    zetasql::ParseResumeLocation location =
-        zetasql::ParseResumeLocation::FromStringView(sql);
+    ParseResumeLocation location =
+        ParseResumeLocation::FromStringView(sql);
     bool is_the_end = false;
-    while ( !is_the_end && return_status.ok() ) {
-        return_status = zetasql::ParseNextScriptStatement(
-            &location, zetasql::ParserOptions(), &output, &is_the_end);
-        if ( !is_the_end && return_status.ok() ) {
+    while ( !is_the_end ) {
+        ZETASQL_RETURN_IF_ERROR(ParseNextScriptStatement(
+            &location, ParserOptions(), &output, &is_the_end));
+        if ( !is_the_end ) {
             int endLocation = output -> statement() -> GetParseLocationRange()
                 .end().GetByteOffset();
 
             if ( endLocation < sql.size() && sql[endLocation] != ';' ) {
                 return absl::Status(
                         absl::StatusCode::kFailedPrecondition,
-                        absl::StrCat(
-                            "Each statemnt should end with a consequtive",
-                            "semicolon ';'"));
+                        "Each statemnt should end with a consequtive"
+                        "semicolon ';'");
             }
         }
     }
-    return return_status;
+    return absl::OkStatus();
 }
 
 bool AllUpperCase(const absl::string_view &sql,
-    const zetasql::ParseLocationRange &range) {
+    const ParseLocationRange &range) {
     for (int i = range.start().GetByteOffset();
                 i < range.end().GetByteOffset(); ++i) {
         if ( 'a' <= sql[i] && sql[i] <= 'z' )
@@ -133,7 +130,7 @@ bool AllUpperCase(const absl::string_view &sql,
 
 absl::Status CheckUppercaseKeywords(absl::string_view sql) {
     ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
-    std::vector<zetasql::ParseToken> parse_tokens;
+    std::vector<ParseToken> parse_tokens;
     absl::Status tokenizer_status =
         GetParseTokens(ParseTokenOptions(), &location, &parse_tokens);
 
@@ -142,13 +139,14 @@ absl::Status CheckUppercaseKeywords(absl::string_view sql) {
     // Keyword Uppercase check will simply ignore characters
     // outside of english lowercase letters.
     for ( auto &token : parse_tokens ) {
-      if ( token.kind() == zetasql::ParseToken::KEYWORD ) {
+      if ( token.kind() == ParseToken::KEYWORD ) {
         if (!AllUpperCase(sql, token.GetLocationRange())) {
           return absl::Status(
             absl::StatusCode::kFailedPrecondition,
             absl::StrCat("All keywords should be Uppercase, In character ",
             std::to_string(token.GetLocationRange().start().GetByteOffset()),
-            " string should be: ", token.GetSQL()));
+            " string should be: ",
+            token.GetSQL()));
         }
       }
     }
@@ -160,11 +158,11 @@ absl::Status CheckCommentType(absl::string_view sql) {
     bool includes_type1 = false;
     bool includes_type2 = false;
     bool inside_string = false;
-    
+
     for (int i = 1; i<static_cast<int>(sql.size()); ++i) {
         if (!inside_string && sql[i-1] == '-' && sql[i] == '-') {
             includes_type1 = true;
-            // ignore the line
+            // ignore the line.
             while ( i < static_cast<int>(sql.size()) &&
                     sql[i] != '\n' ) {
                 ++i;
@@ -173,18 +171,18 @@ absl::Status CheckCommentType(absl::string_view sql) {
 
         if (!inside_string && sql[i-1] == '/' && sql[i] == '/') {
             includes_type2 = true;
-            // ignore the line
+            // ignore the line.
             while ( i < static_cast<int>(sql.size()) &&
                     sql[i] != '\n' ) {
                 ++i;
             }
         }
 
-        // ignore multiline comments
+        // ignore multiline comments.
         if (!inside_string && sql[i-1] == '/' && sql[i] == '*') {
             // it will start checking after '/*' and after the iteration
             // finished, the pointer 'i' will be just after '*/' (incrementation
-            // from the for statement is included)
+            // from the for statement is included).
             i += 2;
             while ( i < static_cast<int>(sql.size()) &&
                     !(sql[i-1] == '*' && sql[i] == '/') ) {
@@ -199,36 +197,35 @@ absl::Status CheckCommentType(absl::string_view sql) {
     if ( includes_type1 && includes_type2 )
         return absl::Status(
                 absl::StatusCode::kFailedPrecondition,
-                absl::StrCat("either '//' or '--' should be used to ",
-                            "specify a comment"));
+                "either '//' or '--' should be used to "
+                "specify a comment");
     return absl::OkStatus();
 }
 
 absl::Status ASTNodeRule::ApplyTo(absl::string_view sql) {
     RuleVisitor visitor(rule_, sql);
-    absl::Status return_status = absl::OkStatus();
-    std::unique_ptr<zetasql::ParserOutput> output;
 
-    zetasql::ParseResumeLocation location =
-        zetasql::ParseResumeLocation::FromStringView(sql);
+    std::unique_ptr<ParserOutput> output;
+    ParseResumeLocation location =
+        ParseResumeLocation::FromStringView(sql);
+
     bool is_the_end = false;
-    while ( !is_the_end && return_status.ok() ) {
-        return_status = zetasql::ParseNextScriptStatement(
-            &location, zetasql::ParserOptions(), &output, &is_the_end);
-        if ( return_status.ok() ) {
-            return_status = output->statement()->TraverseNonRecursive(&visitor);
-        }
+    while (!is_the_end) {
+        ZETASQL_RETURN_IF_ERROR(ParseNextScriptStatement(
+            &location, ParserOptions(), &output, &is_the_end));
+        ZETASQL_RETURN_IF_ERROR(
+            output->statement()->TraverseNonRecursive(&visitor));
     }
-    if ( return_status.ok() ) {
-        return_status = visitor.GetResult();
-    }
-    return return_status;
+
+    ZETASQL_RETURN_IF_ERROR(visitor.GetResult());
+
+    return absl::OkStatus();
 }
 
 absl::Status CheckAliasKeyword(absl::string_view sql) {
-    return ASTNodeRule([](const zetasql::ASTNode* node,
+    return ASTNodeRule([](const ASTNode* node,
         absl::string_view sql) -> absl::Status {
-        if (node->node_kind() == zetasql::AST_ALIAS) {
+        if (node->node_kind() == AST_ALIAS) {
             int position = node->GetParseLocationRange()
                 .start().GetByteOffset();
             if ( sql[position] != 'A' || sql[position+1] != 'S' ) {
@@ -254,5 +251,4 @@ zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(
     return VisitResult::VisitChildren(node);
 }
 
-}  // namespace linter
-}  // namespace zetasql
+}  // namespace zetasql::linter

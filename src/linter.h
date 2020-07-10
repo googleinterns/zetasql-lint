@@ -29,15 +29,13 @@
 #include "zetasql/public/parse_helpers.h"
 #include "zetasql/public/parse_resume_location.h"
 
-namespace zetasql {
+namespace zetasql::linter {
 
-namespace linter {
-
-// It gets rule and applies that rule to every ASTnode it visit
-class RuleVisitor : public zetasql::NonRecursiveParseTreeVisitor {
+// It gets rule and applies that rule to every ASTnode it visit.
+class RuleVisitor : public NonRecursiveParseTreeVisitor {
  public:
     RuleVisitor(const std::function
-        <absl::Status(const zetasql::ASTNode*, absl::string_view)> &rule,
+        <absl::Status(const ASTNode*, absl::string_view)> &rule,
                 const absl::string_view &sql)
         : rule_(rule), sql_(sql), result_(absl::OkStatus()) {}
 
@@ -48,48 +46,45 @@ class RuleVisitor : public zetasql::NonRecursiveParseTreeVisitor {
 
  private:
     std::function
-        <absl::Status(const zetasql::ASTNode*, absl::string_view)> rule_;
+        <absl::Status(const ASTNode*, absl::string_view)> rule_;
     absl::string_view sql_;
     absl::Status result_;
 };
 
-//
 class ASTNodeRule {
  public:
     explicit ASTNodeRule(const std::function
-        <absl::Status(const zetasql::ASTNode*, absl::string_view)> rule)
+        <absl::Status(const ASTNode*, absl::string_view)> rule)
         : rule_(rule) {}
     absl::Status ApplyTo(absl::string_view sql);
  private:
     std::function
-        <absl::Status(const zetasql::ASTNode*, absl::string_view)> rule_;
+        <absl::Status(const ASTNode*, absl::string_view)> rule_;
 };
 
 // Debugger that will be erased later.
 absl::Status PrintASTTree(absl::string_view sql);
 
 // Checks if the number of characters in any line
-// exceed a certain treshold
+// exceed a certain treshold.
 absl::Status CheckLineLength(absl::string_view sql, int lineLimit = 100,
     const char delimeter = '\n');
 
-// Checks whether given sql statement is a valid
-// GoogleSql statement
-absl::Status CheckStatement(absl::string_view sql);
+// Checks whether input can be parsed with ZetaSQL parser.
+absl::Status CheckParserSucceeds(absl::string_view sql);
 
-// Checks whether every statement ends with a semicolon ';'
+// Checks whether every statement ends with a semicolon ';'.
 absl::Status CheckSemicolon(absl::string_view sql);
 
-// Checks whether all keywords are uppercase
+// Checks whether all keywords are uppercase.
 absl::Status CheckUppercaseKeywords(absl::string_view sql);
 
-// Check if comment style is uniform (either -- or //, not both)
+// Check if comment style is uniform (either -- or //, not both).
 absl::Status CheckCommentType(absl::string_view sql);
 
-// Checks whether all aliases denoted by 'AS' keyword
+// Checks whether all aliases denoted by 'AS' keyword.
 absl::Status CheckAliasKeyword(absl::string_view sql);
 
-}  // namespace linter
-}  // namespace zetasql
+}  // namespace zetasql::linter
 
 #endif  // SRC_LINTER_H_
