@@ -62,6 +62,11 @@ class ASTNodeRule {
         <absl::Status(const ASTNode*, absl::string_view)> rule_;
 };
 
+struct CodePosition {
+    int line;
+    int position;
+};
+
 // Debugger that will be erased later.
 absl::Status PrintASTTree(absl::string_view sql);
 
@@ -84,6 +89,11 @@ absl::Status CheckCommentType(absl::string_view sql);
 
 // Checks whether all aliases denoted by 'AS' keyword.
 absl::Status CheckAliasKeyword(absl::string_view sql);
+
+// Checks whether all tab characters in indentations are spaces or tabs
+// (if allowAllTabs flag is set).
+absl::Status CheckTabCharactersUniform(absl::string_view sql,
+    bool allow_all_tabs = true, const char delimeter = '\n');
 
 }  // namespace zetasql::linter
 

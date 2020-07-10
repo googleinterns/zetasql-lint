@@ -240,6 +240,59 @@ absl::Status CheckAliasKeyword(absl::string_view sql) {
     }).ApplyTo(sql);
 }
 
+absl::Status CheckTabCharactersUniform(absl::string_view sql,
+    bool allow_all_tabs, const char delimeter) {
+    const char tab = '\t', space = ' ';
+
+    // Find all tabs and spaces in indents.
+    int line_number = 1, line_size = 0;
+    bool is_indent = true;
+    std::vector<CodePosition> tabs, spaces;
+    for (int i=0; i<static_cast<int>(sql.size()); ++i) {
+        if ( sql[i] == delimeter ) {
+            ++line_number;
+            line_size = 0;
+            is_indent = true;
+            continue;
+        } else if ( sql[i] == space ) {
+            if ( is_indent ) {
+                spaces.push_back({ line_number, line_size });
+            }
+        } else if ( sql[i] == tab ) {
+            if ( is_indent ) {
+                tabs.push_back({ line_number, line_size });
+            }
+        } else {
+            is_indent = false;
+        }
+        ++line_size;
+    }
+
+    int spaces_number = spaces.size();
+    int tabs_number = tabs.size();
+
+    if ( tabs_number == 0 || (spaces_number == 0 && allow_all_tabs) ) {
+        return absl::OkStatus();
+    }
+
+    // TODO: return all error positions in tabs/spaces array
+    // instead of the first one.
+    CodePosition error_pos =
+        (!allow_all_tabs || tabs_number < spaces_number) ?
+        tabs[0] : spaces[0];
+    absl::string_view error_msg = absl::StrCat(
+        (allow_all_tabs ?
+        "Inconsistent use of tabs and spaces" : "Tab instead of spaces"),
+        " in indentation");
+
+    return absl::Status(
+               absl::StatusCode::kFailedPrecondition,
+               absl::StrCat(
+               error_msg,
+               " in line ", std::to_string(tabs[0].line),
+               " position ", std::to_string(tabs[0].position)));
+}
+
 zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(
         const ASTNode* node) {
     absl::Status rule_result = rule_(node, sql_);

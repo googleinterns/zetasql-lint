@@ -91,5 +91,19 @@ TEST(LinterTest, AliasKeywordCheck) {
     EXPECT_TRUE(CheckAliasKeyword("SELECT 1 AS one").ok());
 }
 
+TEST(LinterTest, TabCharactersUniformCheck) {
+    EXPECT_TRUE(CheckTabCharactersUniform("  SELECT 5;\n    SELECT 6;").ok());
+    EXPECT_TRUE(CheckTabCharactersUniform("\tSELECT 5;\n\t\tSELECT 6;").ok());
+    EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n SELECT\t6;\t").ok());
+    EXPECT_FALSE(CheckTabCharactersUniform("SELECT 5;\n \t SELECT 6;").ok());
+    EXPECT_FALSE(CheckTabCharactersUniform(
+        "  SELECT kek;\n\tSELECT lol;").ok());
+
+    EXPECT_TRUE(CheckTabCharactersUniform(
+        "SELECT kek;\n\tSELECT lol;", true).ok());
+    EXPECT_FALSE(CheckTabCharactersUniform(
+        "SELECT kek;\n\tSELECT lol;", false).ok());
+}
+
 }  // namespace
 }  // namespace zetasql::linter
