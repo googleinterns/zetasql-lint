@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "zetasql/base/status.h"
+#include "absl/status/status.h"
 #include "zetasql/parser/parse_tree_visitor.h"
 #include "zetasql/parser/parser.h"
 #include "zetasql/public/parse_helpers.h"
