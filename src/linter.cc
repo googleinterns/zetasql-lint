@@ -88,8 +88,7 @@ bool allUpperCase(const zetasql::ASTNode* x) {
 }
 
 absl::Status checkUppercaseKeywords(absl::string_view sql) {
-    std::vector<const zetasql::ASTNode *> *keywords;
-    *keywords = std::vector<const zetasql::ASTNode *>();
+    std::vector<const zetasql::ASTNode *> keywords{};
 
     std::unique_ptr<zetasql::ParserOutput> output;
 
@@ -98,10 +97,9 @@ absl::Status checkUppercaseKeywords(absl::string_view sql) {
 
     if ( !parser_status.ok() )
         return parser_status;
+    // TODO(orhan_uysal): Implement KeywordExtractor.
 
-    // KeywordExtractor(output->statement(), keywords).extract();
-
-    for (const zetasql::ASTNode *keyword : *keywords) {
+    for (const zetasql::ASTNode *keyword : keywords) {
         if ( !allUpperCase(keyword) ) {
             return absl::Status(
                 absl::StatusCode::kFailedPrecondition, "");
