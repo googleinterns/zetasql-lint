@@ -242,7 +242,7 @@ absl::Status CheckAliasKeyword(absl::string_view sql) {
 
 absl::Status CheckTabCharactersUniform(absl::string_view sql,
     bool allow_all_tabs, const char delimeter) {
-    const char tab = '\t', space = ' ';
+    const char kTab = '\t', kSpace = ' ';
 
     // Find all tabs and spaces in indents.
     int line_number = 1, line_size = 0;
@@ -254,11 +254,11 @@ absl::Status CheckTabCharactersUniform(absl::string_view sql,
             line_size = 0;
             is_indent = true;
             continue;
-        } else if ( sql[i] == space ) {
+        } else if ( sql[i] == kSpace ) {
             if ( is_indent ) {
                 spaces.push_back({ line_number, line_size });
             }
-        } else if ( sql[i] == tab ) {
+        } else if ( sql[i] == kTab ) {
             if ( is_indent ) {
                 tabs.push_back({ line_number, line_size });
             }
@@ -275,8 +275,6 @@ absl::Status CheckTabCharactersUniform(absl::string_view sql,
         return absl::OkStatus();
     }
 
-    // TODO: return all error positions in tabs/spaces array
-    // instead of the first one.
     CodePosition error_pos =
         (!allow_all_tabs || tabs_number < spaces_number) ?
         tabs[0] : spaces[0];
