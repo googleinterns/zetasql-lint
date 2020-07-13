@@ -23,11 +23,13 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
 #include "zetasql/base/status.h"
+#include "zetasql/base/statusor.h"
 #include "zetasql/base/status_macros.h"
 #include "zetasql/parser/parse_tree_visitor.h"
 #include "zetasql/parser/parse_tree.h"
 #include "zetasql/parser/parser.h"
 #include "zetasql/public/parse_helpers.h"
+#include "zetasql/public/parse_location.h"
 #include "zetasql/public/parse_tokens.h"
 #include "zetasql/public/parse_resume_location.h"
 
@@ -252,6 +254,43 @@ absl::Status CheckAliasKeyword(absl::string_view sql) {
         }
         return absl::OkStatus();
     }).ApplyTo(sql);
+}
+
+std::string ConstructPositionMessage(std::pair <int, int> pos) {
+    return absl::StrCat("line ", pos.first,
+                        " position ", pos.second);
+}
+
+absl::Status CheckTabCharactersUniform(absl::string_view sql,
+    const char allowed_indent, const char line_delimeter) {
+    bool is_indent = true;
+    const char kSpace = ' ', kTab = '\t';
+
+    for (int i=0; i<static_cast<int>(sql.size()); ++i) {
+        if ( sql[i] == line_delimeter ) {
+            is_indent = true;
+        } else if ( is_indent && sql[i] != allowed_indent ) {
+            if ( sql[i] == kTab || sql[i] == kSpace ) {
+                // Return error on position <i>.
+                ParseLocationPoint lp =
+                    ParseLocationPoint::FromByteOffset(i);
+                ParseLocationTranslator lt(sql);
+                std::pair <int, int> error_pos;
+                ZETASQL_ASSIGN_OR_RETURN(error_pos,
+                    lt.GetLineAndColumnAfterTabExpansion(lp));
+
+                return absl::Status(
+                           absl::StatusCode::kFailedPrecondition,
+                           absl::StrCat(
+                           "Inconsistent use of indentation symbols: ",
+                           "expected \"", std::string(1, allowed_indent), "\"",
+                           " in ", ConstructPositionMessage(error_pos)));
+            }
+            is_indent = false;
+        }
+    }
+
+    return absl::OkStatus();
 }
 
 zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(
