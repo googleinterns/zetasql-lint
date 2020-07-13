@@ -59,9 +59,9 @@ TEST(LinterTest, StatementValidityCheck) {
 
 TEST(LinterTest, SemicolonCheck) {
     EXPECT_TRUE(CheckSemicolon("SELECT 3+5;\nSELECT 4+6;").ok());
-    EXPECT_FALSE(CheckSemicolon("SELECT 3+5\nSELECT 4+6;").ok());
-    EXPECT_TRUE(CheckSemicolon("SELECT 3+5;  \nSELECT 4+6").ok());
-    EXPECT_FALSE(CheckSemicolon("SELECT 3+5  ;  \nSELECT 4+6").ok());
+    EXPECT_FALSE(CheckSemicolon("SELECT 3+5;\nSELECT 4+6").ok());
+    EXPECT_TRUE(CheckSemicolon("SELECT 3+5;  \nSELECT 4+6;").ok());
+    EXPECT_FALSE(CheckSemicolon("SELECT 3+5  ;  \nSELECT 4+6;").ok());
 }
 
 TEST(LinterTest, UppercaseKeywordCheck) {
