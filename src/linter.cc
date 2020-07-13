@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "linter.h"
+#include "src/linter.h"
 
 #include <cstdio>
 #include <iostream>
