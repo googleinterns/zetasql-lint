@@ -20,6 +20,7 @@
 #include <vector>
 #include <cstdio>
 #include <string>
+#include <utility>
 
 #include "absl/strings/string_view.h"
 #include "absl/status/status.h"
@@ -84,6 +85,16 @@ absl::Status CheckCommentType(absl::string_view sql);
 
 // Checks whether all aliases denoted by 'AS' keyword.
 absl::Status CheckAliasKeyword(absl::string_view sql);
+
+// Checks whether all tab characters in indentations are equal to
+// <allowed_indent>.
+absl::Status CheckTabCharactersUniform(absl::string_view sql,
+    const char allowed_indent = ' ', const char line_delimeter = '\n');
+
+
+// Constructs a text message with code position info.
+// <pos> represents the (line, position) in the code.
+std::string ConstructPositionMessage(std::pair <int, int> pos);
 
 }  // namespace zetasql::linter
 
