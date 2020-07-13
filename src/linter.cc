@@ -19,15 +19,18 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <utility>
 
 #include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
 #include "zetasql/base/status.h"
+#include "zetasql/base/statusor.h"
 #include "zetasql/base/status_macros.h"
 #include "zetasql/parser/parse_tree_visitor.h"
 #include "zetasql/parser/parse_tree.h"
 #include "zetasql/parser/parser.h"
 #include "zetasql/public/parse_helpers.h"
+#include "zetasql/public/parse_location.h"
 #include "zetasql/public/parse_tokens.h"
 #include "zetasql/public/parse_resume_location.h"
 
@@ -245,50 +248,53 @@ absl::Status CheckTabCharactersUniform(absl::string_view sql,
     const char kTab = '\t', kSpace = ' ';
 
     // Find all tabs and spaces in indents.
-    int line_number = 1, line_size = 0;
     bool is_indent = true;
-    std::vector<CodePosition> tabs, spaces;
+    int first_space = -1, first_tab = -1;
+    int spaces_number = 0, tabs_number = 0;
     for (int i=0; i<static_cast<int>(sql.size()); ++i) {
         if ( sql[i] == delimeter ) {
-            ++line_number;
-            line_size = 0;
             is_indent = true;
-            continue;
         } else if ( sql[i] == kSpace ) {
             if ( is_indent ) {
-                spaces.push_back({ line_number, line_size });
+                ++spaces_number;
+                first_space = (first_space == -1) ? i : first_space;
             }
         } else if ( sql[i] == kTab ) {
             if ( is_indent ) {
-                tabs.push_back({ line_number, line_size });
+                ++tabs_number;
+                first_tab = (first_tab == -1) ? i : first_tab;
             }
         } else {
             is_indent = false;
         }
-        ++line_size;
     }
-
-    int spaces_number = spaces.size();
-    int tabs_number = tabs.size();
 
     if ( tabs_number == 0 || (spaces_number == 0 && allow_all_tabs) ) {
         return absl::OkStatus();
     }
 
-    CodePosition error_pos =
+    int error_index =
         (!allow_all_tabs || tabs_number < spaces_number) ?
-        tabs[0] : spaces[0];
+        first_tab : first_space;
     absl::string_view error_msg = absl::StrCat(
         (allow_all_tabs ?
         "Inconsistent use of tabs and spaces" : "Tab instead of spaces"),
         " in indentation");
 
+    ParseLocationPoint lp =
+        ParseLocationPoint::FromByteOffset(error_index);
+    ParseLocationTranslator lt(sql);
+    zetasql_base::StatusOr <std::pair <int, int> > status_or_pos =
+        lt.GetLineAndColumnAfterTabExpansion(lp);
+    ZETASQL_RETURN_IF_ERROR(status_or_pos.status());
+    std::pair <int, int> error_pos = status_or_pos.value();
+
     return absl::Status(
                absl::StatusCode::kFailedPrecondition,
                absl::StrCat(
                error_msg,
-               " in line ", std::to_string(tabs[0].line),
-               " position ", std::to_string(tabs[0].position)));
+               " in line ", std::to_string(error_pos.first),
+               " position ", std::to_string(error_pos.second)));
 }
 
 zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(

@@ -62,11 +62,6 @@ class ASTNodeRule {
         <absl::Status(const ASTNode*, absl::string_view)> rule_;
 };
 
-struct CodePosition {
-    int line;
-    int position;
-};
-
 // Debugger that will be erased later.
 absl::Status PrintASTTree(absl::string_view sql);
 
