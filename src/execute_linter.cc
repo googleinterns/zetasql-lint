@@ -14,12 +14,12 @@
 // limitations under the License.
 //
 #include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <memory>
-#include <vector>
-#include <string>
-#include <fstream>
 #include <streambuf>
+#include <string>
+#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "src/lint_errors.h"
@@ -31,55 +31,54 @@ namespace zetasql::linter {
 
 namespace {
 
-    // It runs all specified checks
-    // "LinterOptions" parameter will be added in future.
-    absl::Status RunChecks(absl::string_view sql) {
-        LinterResult result, output;
-        ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, &output));
-        result.Add(output);
-        output.clear();
-        ZETASQL_RETURN_IF_ERROR(CheckParserSucceeds(sql, &output));
-        result.Add(output);
-        output.clear();
-        ZETASQL_RETURN_IF_ERROR(CheckSemicolon(sql, &output));
-        result.Add(output);
-        output.clear();
-        ZETASQL_RETURN_IF_ERROR(CheckUppercaseKeywords(sql, &output));
-        result.Add(output);
-        output.clear();
-        ZETASQL_RETURN_IF_ERROR(CheckCommentType(sql, &output));
-        result.Add(output);
-        output.clear();
-        ZETASQL_RETURN_IF_ERROR(CheckAliasKeyword(sql, &output));
-        result.Add(output);
-        std::cout << "Linter completed running." << std::endl;
-        result.PrintResult();
-        return absl::OkStatus();
-    }
+// It runs all specified checks
+// "LinterOptions" parameter will be added in future.
+absl::Status RunChecks(absl::string_view sql) {
+  LinterResult result, output;
+  ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, &output));
+  result.Add(output);
+  output.clear();
+  ZETASQL_RETURN_IF_ERROR(CheckParserSucceeds(sql, &output));
+  result.Add(output);
+  output.clear();
+  ZETASQL_RETURN_IF_ERROR(CheckSemicolon(sql, &output));
+  result.Add(output);
+  output.clear();
+  ZETASQL_RETURN_IF_ERROR(CheckUppercaseKeywords(sql, &output));
+  result.Add(output);
+  output.clear();
+  ZETASQL_RETURN_IF_ERROR(CheckCommentType(sql, &output));
+  result.Add(output);
+  output.clear();
+  ZETASQL_RETURN_IF_ERROR(CheckAliasKeyword(sql, &output));
+  result.Add(output);
+  std::cout << "Linter completed running." << std::endl;
+  result.PrintResult();
+  return absl::OkStatus();
+}
 
 }  // namespace
 }  // namespace zetasql::linter
 
-
 int main(int argc, char* argv[]) {
-    if (argc <= 2) {
-        std::cout << "Usage: execute_linter < <file_name>\n" << std::endl;
-    }
-    char *filename = argv[argc-1];
+  if (argc <= 2) {
+    std::cout << "Usage: execute_linter < <file_name>\n" << std::endl;
+  }
+  char* filename = argv[argc - 1];
 
-    std::cout << filename << std::endl;
+  std::cout << filename << std::endl;
 
-    std::ifstream t(filename);
-    std::string str((std::istreambuf_iterator<char>(t)),
-                    std::istreambuf_iterator<char>());
-    absl::string_view sql(str);
+  std::ifstream t(filename);
+  std::string str((std::istreambuf_iterator<char>(t)),
+                  std::istreambuf_iterator<char>());
+  absl::string_view sql(str);
 
-    absl::Status status = zetasql::linter::RunChecks(sql);
+  absl::Status status = zetasql::linter::RunChecks(sql);
 
-    if (status.ok()) {
-        return 0;
-    } else {
-        std::cout << "ERROR: " << status << std::endl;
-        return 1;
-    }
+  if (status.ok()) {
+    return 0;
+  } else {
+    std::cout << "ERROR: " << status << std::endl;
+    return 1;
+  }
 }
