@@ -50,6 +50,8 @@ class LintError {
 
     void PrintError();
 
+    int getLineNumber() const { return line_; }
+
  private:
     // Holds type of the lint error. Type of an error is a number
     // that corresponds to a specific linter check.
@@ -102,4 +104,4 @@ class LinterResult {
 }  // namespace linter
 }  // namespace zetasql
 
-#endif  // SRC_LINTER_H_
+#endif  // SRC_LINT_ERRORS_H_

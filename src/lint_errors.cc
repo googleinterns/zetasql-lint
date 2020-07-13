@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 #include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
@@ -57,6 +58,11 @@ void LintError::PrintError() {
 }
 
 void LinterResult::PrintResult() {
+    // Need to sort according to increasing line number
+    sort(errors_.begin(), errors_.end(),
+        [&](const LintError &a, const LintError &b){
+        return a.getLineNumber() < b.getLineNumber();
+    });
     for ( LintError error : errors_ )
         error.PrintError();
 }

@@ -64,6 +64,7 @@ absl::Status CheckLineLength(absl::string_view sql,  LinterResult* result,
     int line_limit, const char delimeter) {
     int lineSize = 0;
     int line_number = 1;
+    int last_added = 0;
     for (int i=0; i<static_cast<int>(sql.size()); ++i) {
         if ( sql[i] == delimeter ) {
             lineSize = 0;
@@ -71,8 +72,9 @@ absl::Status CheckLineLength(absl::string_view sql,  LinterResult* result,
         } else {
             ++lineSize;
         }
-        if ( lineSize > line_limit ) {
+        if ( lineSize > line_limit && line_number > last_added ) {
             // TODO(orhanuysal): add proper error handling.
+            last_added = line_number;
             result->Add(ErrorCode::kLineLimit, sql, i);
         }
     }

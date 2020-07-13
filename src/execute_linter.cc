@@ -34,17 +34,24 @@ namespace zetasql::linter {
     absl::Status run_checks(absl::string_view sql) {
         LinterResult result, output;
         ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, &output));
-        result.add(output);
+        result.Add(output);
+        output.clear();
         ZETASQL_RETURN_IF_ERROR(CheckParserSucceeds(sql, &output));
-        result.add(output);
+        result.Add(output);
+        output.clear();
         ZETASQL_RETURN_IF_ERROR(CheckSemicolon(sql, &output));
-        result.add(output);
+        result.Add(output);
+        output.clear();
         ZETASQL_RETURN_IF_ERROR(CheckUppercaseKeywords(sql, &output));
-        result.add(output);
+        result.Add(output);
+        output.clear();
         ZETASQL_RETURN_IF_ERROR(CheckCommentType(sql, &output));
-        result.add(output);
+        result.Add(output);
+        output.clear();
         ZETASQL_RETURN_IF_ERROR(CheckAliasKeyword(sql, &output));
-        result.add(output);
+        result.Add(output);
+        std::cout << "Linter completed running." << std::endl;
+        result.PrintResult();
         return absl::OkStatus();
     }
 
@@ -52,17 +59,19 @@ namespace zetasql::linter {
 
 
 int main(int argc, char* argv[]) {
-    if (argc <= 1) {
-        std::cout << "Usage: execute_linter <file_name>\n" << std::endl;
+    if (argc <= 2) {
+        std::cout << "Usage: execute_linter < <file_name>\n" << std::endl;
     }
     char *filename = argv[argc-1];
+
+    std::cout << filename << std::endl;
 
     std::ifstream t(filename);
     std::string str((std::istreambuf_iterator<char>(t)),
                     std::istreambuf_iterator<char>());
     absl::string_view sql(str);
 
-    absl::Status status = run_checks(sql);
+    absl::Status status = zetasql::linter::run_checks(sql);
 
     if (status.ok()) {
         return 0;
