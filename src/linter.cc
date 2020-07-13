@@ -247,6 +247,20 @@ std::string ConstructPositionMessage(std::pair <int, int> pos) {
                         " position ", pos.second);
 }
 
+absl::Status ConstructErrorWithPosition(absl::string_view sql,
+    int index, absl::string_view error_msg) {
+    ParseLocationPoint lp =
+        ParseLocationPoint::FromByteOffset(index);
+    ParseLocationTranslator lt(sql);
+    std::pair <int, int> error_pos;
+    ZETASQL_ASSIGN_OR_RETURN(error_pos,
+        lt.GetLineAndColumnAfterTabExpansion(lp));
+    return absl::Status(
+               absl::StatusCode::kFailedPrecondition,
+               absl::StrCat(
+               error_msg, " in ", ConstructPositionMessage(error_pos)));
+}
+
 absl::Status CheckTabCharactersUniform(absl::string_view sql,
     const char allowed_indent, const char line_delimeter) {
     bool is_indent = true;
@@ -257,22 +271,34 @@ absl::Status CheckTabCharactersUniform(absl::string_view sql,
             is_indent = true;
         } else if ( is_indent && sql[i] != allowed_indent ) {
             if ( sql[i] == kTab || sql[i] == kSpace ) {
-                // Return error on position <i>.
-                ParseLocationPoint lp =
-                    ParseLocationPoint::FromByteOffset(i);
-                ParseLocationTranslator lt(sql);
-                std::pair <int, int> error_pos;
-                ZETASQL_ASSIGN_OR_RETURN(error_pos,
-                    lt.GetLineAndColumnAfterTabExpansion(lp));
-
-                return absl::Status(
-                           absl::StatusCode::kFailedPrecondition,
-                           absl::StrCat(
+                return ConstructErrorWithPosition(sql, i,
+                       absl::StrCat(
                            "Inconsistent use of indentation symbols: ",
-                           "expected \"", std::string(1, allowed_indent), "\"",
-                           " in ", ConstructPositionMessage(error_pos)));
+                           "expected \"", std::string(1, allowed_indent),
+                           "\""));
             }
             is_indent = false;
+        }
+    }
+
+    return absl::OkStatus();
+}
+
+absl::Status CheckNoTabsBesidesIndentations(absl::string_view sql,
+    const char line_delimeter) {
+    const char kSpace = ' ', kTab = '\t';
+
+    bool is_indent = true;
+
+    for (int i=0; i<static_cast<int>(sql.size()); ++i) {
+        if ( sql[i] == line_delimeter ) {
+            is_indent = true;
+        } else if ( sql[i] != kSpace && sql[i] != kTab ) {
+            is_indent = false;
+        } else if ( sql[i] == kTab && !is_indent ) {
+            return ConstructErrorWithPosition(sql, i,
+                       absl::string_view(
+                           "Tab not in the indentation, expected space"));
         }
     }
 
