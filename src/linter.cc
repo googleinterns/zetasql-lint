@@ -261,7 +261,8 @@ absl::Status CheckTabCharactersUniform(absl::string_view sql,
                 ParseLocationPoint lp =
                     ParseLocationPoint::FromByteOffset(i);
                 ParseLocationTranslator lt(sql);
-                ZETASQL_ASSIGN_OR_RETURN(auto error_pos,
+                std::pair <int, int> error_pos;
+                ZETASQL_ASSIGN_OR_RETURN(error_pos,
                     lt.GetLineAndColumnAfterTabExpansion(lp));
 
                 return absl::Status(
