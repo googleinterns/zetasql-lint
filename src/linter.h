@@ -85,10 +85,10 @@ absl::Status CheckCommentType(absl::string_view sql);
 // Checks whether all aliases denoted by 'AS' keyword.
 absl::Status CheckAliasKeyword(absl::string_view sql);
 
-// Checks whether all tab characters in indentations are spaces or tabs
-// (if allowAllTabs flag is set).
+// Checks whether all tab characters in indentations are equal to
+// <indent>.
 absl::Status CheckTabCharactersUniform(absl::string_view sql,
-    bool allow_all_tabs = true, const char delimeter = '\n');
+    const char indent = ' ', const char delimeter = '\n');
 
 }  // namespace zetasql::linter
 
