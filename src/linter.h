@@ -80,7 +80,8 @@ absl::Status CheckSemicolon(absl::string_view sql);
 absl::Status CheckUppercaseKeywords(absl::string_view sql);
 
 // Check if comment style is uniform (either -- or //, not both).
-absl::Status CheckCommentType(absl::string_view sql);
+absl::Status CheckCommentType(absl::string_view sql,
+    const char delimeter = '\n');
 
 // Checks whether all aliases denoted by 'AS' keyword.
 absl::Status CheckAliasKeyword(absl::string_view sql);

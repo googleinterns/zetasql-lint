@@ -22,7 +22,6 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
-#include "src/lint_errors.h"
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
 #include "zetasql/parser/parse_tree_visitor.h"
@@ -156,42 +155,48 @@ absl::Status CheckUppercaseKeywords(absl::string_view sql) {
     return absl::OkStatus();
 }
 
-absl::Status CheckCommentType(absl::string_view sql) {
-    bool includes_type1 = false;
-    bool includes_type2 = false;
-    bool includes_type3 = false;
+absl::Status CheckCommentType(absl::string_view sql, char delimeter) {
+    bool dash_comment = false;
+    bool slash_comment = false;
+    bool hash_comment = false;
     bool inside_string = false;
 
-    for (int i = 1; i<static_cast<int>(sql.size()); ++i) {
-        if (!inside_string && sql[i-1] == '-' && sql[i] == '-') {
-            includes_type1 = true;
+    for (int i = 0; i<static_cast<int>(sql.size()); ++i) {
+        if (sql[i] == '\'' || sql[i] == '"')
+            inside_string = !inside_string;
+
+        if (inside_string)
+            continue;
+
+        if (i > 0 && sql[i-1] == '-' && sql[i] == '-') {
+            dash_comment = true;
             // ignore the line.
             while ( i < static_cast<int>(sql.size()) &&
-                    sql[i] != '\n' ) {
+                    sql[i] != delimeter ) {
                 ++i;
             }
         }
 
-        if (!inside_string && sql[i-1] == '/' && sql[i] == '/') {
-            includes_type2 = true;
+        if (i > 0 && sql[i-1] == '/' && sql[i] == '/') {
+            slash_comment = true;
             // ignore the line.
             while ( i < static_cast<int>(sql.size()) &&
-                    sql[i] != '\n' ) {
+                    sql[i] != delimeter ) {
                 ++i;
             }
         }
 
-        if (!inside_string && sql[i] == '#') {
-            includes_type3 = true;
+        if (sql[i] == '#') {
+            hash_comment = true;
             // ignore the line.
             while ( i < static_cast<int>(sql.size()) &&
-                    sql[i] != '\n' ) {
+                    sql[i] != delimeter ) {
                 ++i;
             }
         }
 
         // ignore multiline comments.
-        if (!inside_string && sql[i-1] == '/' && sql[i] == '*') {
+        if (i > 0 && sql[i-1] == '/' && sql[i] == '*') {
             // it will start checking after '/*' and after the iteration
             // finished, the pointer 'i' will be just after '*/' (incrementation
             // from the for statement is included).
@@ -201,12 +206,9 @@ absl::Status CheckCommentType(absl::string_view sql) {
                 ++i;
             }
         }
-
-        if (sql[i] == '\'' || sql[i] == '"')
-            inside_string = !inside_string;
     }
 
-    if ( includes_type1 + includes_type2 + includes_type3 > 1 )
+    if ( dash_comment + slash_comment + hash_comment > 1 )
         return absl::Status(
                 absl::StatusCode::kFailedPrecondition,
                 "either '//' or '--' should be used to "

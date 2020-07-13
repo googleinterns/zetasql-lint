@@ -55,12 +55,16 @@ TEST(LinterTest, StatementValidityCheck) {
 
     EXPECT_FALSE(CheckParserSucceeds(
         "SELET A FROM B\nSELECT C FROM D").ok());
+
+    EXPECT_FALSE(CheckParserSucceeds(
+        "SELECT 1; SELECT 2 3 4;").ok());
 }
 
 TEST(LinterTest, SemicolonCheck) {
     EXPECT_TRUE(CheckSemicolon("SELECT 3+5;\nSELECT 4+6;").ok());
+    EXPECT_TRUE(CheckSemicolon("SELECT 3+5;   \n   SELECT 4+6;").ok());
     EXPECT_FALSE(CheckSemicolon("SELECT 3+5\nSELECT 4+6;").ok());
-    EXPECT_TRUE(CheckSemicolon("SELECT 3+5;  \nSELECT 4+6").ok());
+    EXPECT_FALSE(CheckSemicolon("SELECT 3+5;  \nSELECT 4+6").ok());
     EXPECT_FALSE(CheckSemicolon("SELECT 3+5  ;  \nSELECT 4+6").ok());
 }
 
@@ -72,6 +76,11 @@ TEST(LinterTest, UppercaseKeywordCheck) {
 }
 
 TEST(LinterTest, CommentTypeCheck) {
+    EXPECT_FALSE(CheckCommentType(
+        "# Comment 1\n-- Comment 2\nSELECT 3+5\n").ok());
+    EXPECT_TRUE(CheckCommentType(
+        "-- Comment /* unfinished comment").ok());
+
     EXPECT_TRUE(CheckCommentType("//comment 1\nSELECT 3+5\n//comment 2").ok());
     EXPECT_FALSE(CheckCommentType("//comment 1\nSELECT 3+5\n--comment 2").ok());
     EXPECT_TRUE(CheckCommentType("--comment 1\nSELECT 3+5\n--comment 2").ok());
@@ -86,6 +95,7 @@ TEST(LinterTest, CommentTypeCheck) {
 }
 
 TEST(LinterTest, AliasKeywordCheck) {
+    EXPECT_FALSE(CheckAliasKeyword("SELECT 1 a").ok());
     EXPECT_TRUE(CheckAliasKeyword("SELECT * FROM emp AS X").ok());
     EXPECT_FALSE(CheckAliasKeyword("SELECT * FROM emp X").ok());
     EXPECT_TRUE(CheckAliasKeyword("SELECT 1 AS one").ok());
