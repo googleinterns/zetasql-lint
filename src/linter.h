@@ -22,6 +22,7 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
+#include "src/lint_errors.h"
 #include "zetasql/base/status.h"
 #include "zetasql/parser/parse_tree_visitor.h"
 #include "zetasql/parser/parse_tree.h"
@@ -36,54 +37,62 @@ class RuleVisitor : public NonRecursiveParseTreeVisitor {
  public:
     RuleVisitor(const std::function
         <absl::Status(const ASTNode*, absl::string_view)> &rule,
-                const absl::string_view &sql)
-        : rule_(rule), sql_(sql), result_(absl::OkStatus()) {}
+            ErrorCode error_code,
+            const absl::string_view &sql, LinterResult* result)
+        :   rule_(rule), error_code_(error_code),
+            sql_(sql), result_(result) {}
 
     zetasql_base::StatusOr<VisitResult> defaultVisit(
         const ASTNode* node) override;
 
-    absl::Status GetResult() { return result_; }
+    LinterResult* GetResult() { return result_; }
 
  private:
     std::function
         <absl::Status(const ASTNode*, absl::string_view)> rule_;
+    ErrorCode error_code_;
     absl::string_view sql_;
-    absl::Status result_;
+    LinterResult* result_;
 };
 
 class ASTNodeRule {
  public:
-    explicit ASTNodeRule(const std::function
+    explicit ASTNodeRule(LinterResult* result, ErrorCode error_code,
+        const std::function
         <absl::Status(const ASTNode*, absl::string_view)> rule)
-        : rule_(rule) {}
+        : result_(result), error_code_(error_code), rule_(rule) {}
     absl::Status ApplyTo(absl::string_view sql);
+
  private:
+    LinterResult* result_;
+    ErrorCode error_code_;
     std::function
         <absl::Status(const ASTNode*, absl::string_view)> rule_;
 };
 
 // Debugger that will be erased later.
-absl::Status PrintASTTree(absl::string_view sql);
+absl::Status PrintASTTree(absl::string_view sql, LinterResult* result);
 
 // Checks if the number of characters in any line
 // exceed a certain treshold.
-absl::Status CheckLineLength(absl::string_view sql, int lineLimit = 100,
-    const char delimeter = '\n');
+absl::Status CheckLineLength(absl::string_view sql,  LinterResult* result,
+    int lineLimit = 100, const char delimeter = '\n');
 
 // Checks whether input can be parsed with ZetaSQL parser.
-absl::Status CheckParserSucceeds(absl::string_view sql);
+absl::Status CheckParserSucceeds(absl::string_view sql, LinterResult* result);
 
 // Checks whether every statement ends with a semicolon ';'.
-absl::Status CheckSemicolon(absl::string_view sql);
+absl::Status CheckSemicolon(absl::string_view sql, LinterResult* result);
 
-// Checks whether all keywords are uppercase.
-absl::Status CheckUppercaseKeywords(absl::string_view sql);
+// Checks whether all keywords are either uppercase or lowercase.
+absl::Status CheckUppercaseKeywords(absl::string_view sql,
+    LinterResult* result);
 
 // Check if comment style is uniform (either -- or //, not both).
-absl::Status CheckCommentType(absl::string_view sql);
+absl::Status CheckCommentType(absl::string_view sql, LinterResult* result);
 
 // Checks whether all aliases denoted by 'AS' keyword.
-absl::Status CheckAliasKeyword(absl::string_view sql);
+absl::Status CheckAliasKeyword(absl::string_view sql, LinterResult* result);
 
 }  // namespace zetasql::linter
 

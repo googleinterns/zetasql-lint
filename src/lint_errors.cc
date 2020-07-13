@@ -62,7 +62,7 @@ void LinterResult::PrintResult() {
 }
 
 LinterResult::LinterResult(const LinterResult &result) {
-    Add( result );
+    errors_ = result.GetErrors();
 }
 
 void LinterResult::Add(ErrorCode type, absl::string_view filename,
@@ -87,6 +87,10 @@ void LinterResult::Add(const LinterResult &result) {
 
 bool LinterResult::ok() {
     return errors_.empty();
+}
+
+void LinterResult::clear() {
+    errors_.clear();
 }
 
 }  // namespace zetasql::linter

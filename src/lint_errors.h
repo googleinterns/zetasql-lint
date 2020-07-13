@@ -64,6 +64,8 @@ class LintError {
 
 class LinterResult {
  public:
+    LinterResult() {}
+
     explicit LinterResult(const LinterResult &result);
 
     // This function adds a new lint error that occured in 'sql' in
@@ -83,6 +85,9 @@ class LinterResult {
 
     // Returns if any lint error occured
     bool ok();
+
+    // Clears all errors
+    void clear();
 
     std::vector<LintError> GetErrors() const {
         return errors_;

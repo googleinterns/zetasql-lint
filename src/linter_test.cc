@@ -16,16 +16,38 @@
 
 #include "src/linter.h"
 
+#include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <cstdio>
 
 #include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
+#include "src/lint_errors.h"
+#include "zetasql/base/status.h"
+#include "zetasql/base/status_macros.h"
 
 namespace zetasql::linter {
 
 namespace {
+
+// TODO(orhanuysal): add advanced checks.
+// currently, these tests just check if the result is ok
+// number of lint errors or lint error itself is not checked
+
+void Test_if(bool expect,
+    absl::Status (*lint_check)(absl::string_view, LinterResult*),
+    const absl::string_view sql ) {
+    LinterResult result;
+    absl::Status status = (*lint_check)(sql, &result);
+    EXPECT_TRUE(status.ok());
+    if ( expect ) {
+        EXPECT_TRUE(result.ok());
+    } else {
+        EXPECT_FALSE(result.ok());
+    }
+}
 
 TEST(LinterTest, StatementLineLengthCheck) {
     absl::string_view sql =
@@ -35,60 +57,78 @@ TEST(LinterTest, StatementLineLengthCheck) {
     "some long invalid sql statement that shouldn't stop check\n"
     "SELECT t from G\n";
 
-    EXPECT_TRUE(CheckLineLength(sql).ok());
-    EXPECT_FALSE(CheckLineLength(sql, 10).ok());
-    EXPECT_TRUE(CheckLineLength(sql, 10, ' ').ok());
+    // CheckLineLength is special and it will not use Test(..) function
+    LinterResult result;
+    absl::Status status;
 
-    EXPECT_TRUE(CheckLineLength(multiline_sql).ok());
-    EXPECT_FALSE(CheckLineLength(multiline_sql, 30).ok());
+    status = CheckLineLength(sql, &result);
+    EXPECT_TRUE(result.ok());
+    result.clear();
+    status = CheckLineLength(sql, &result, 10);
+    EXPECT_FALSE(result.ok());
+    result.clear();
+    status = CheckLineLength(sql, &result, 10, ' ');
+    EXPECT_TRUE(result.ok());
+    result.clear();
+
+    status = CheckLineLength(multiline_sql, &result);
+    EXPECT_TRUE(result.ok());
+    result.clear();
+    status = CheckLineLength(multiline_sql, &result, 30);
+    EXPECT_FALSE(result.ok());
+
+    // Just to erase warnings
+    EXPECT_TRUE(status.ok());
 }
 
 TEST(LinterTest, StatementValidityCheck) {
-    EXPECT_TRUE(CheckParserSucceeds("SELECT 5+2").ok());
-    EXPECT_FALSE(CheckParserSucceeds("SELECT 5+2 sss ddd").ok());
+    Test_if(true, CheckParserSucceeds, "SELECT 5+2");
+    Test_if(false, CheckParserSucceeds, "SELECT 5+2 sss ddd");
 
-    EXPECT_TRUE(CheckParserSucceeds(
-        "SELECT * FROM emp where b = a or c < d group by x").ok());
+    Test_if(true, CheckParserSucceeds,
+        "SELECT * FROM emp where b = a or c < d group by x");
 
-    EXPECT_TRUE(CheckParserSucceeds(
-        "SELECT e, sum(f) FROM emp where b = a or c < d group by x").ok());
+    Test_if(true, CheckParserSucceeds,
+        "SELECT e, sum(f) FROM emp where b = a or c < d group by x");
 
-    EXPECT_FALSE(CheckParserSucceeds(
-        "SELET A FROM B\nSELECT C FROM D").ok());
+    Test_if(false, CheckParserSucceeds,
+        "SELET A FROM B\nSELECT C FROM D");
 }
 
 TEST(LinterTest, SemicolonCheck) {
-    EXPECT_TRUE(CheckSemicolon("SELECT 3+5;\nSELECT 4+6;").ok());
-    EXPECT_FALSE(CheckSemicolon("SELECT 3+5;\nSELECT 4+6").ok());
-    EXPECT_TRUE(CheckSemicolon("SELECT 3+5;  \nSELECT 4+6;").ok());
-    EXPECT_FALSE(CheckSemicolon("SELECT 3+5  ;  \nSELECT 4+6;").ok());
+    Test_if(true, CheckSemicolon, "SELECT 3+5;\nSELECT 4+6;");
+    Test_if(false, CheckSemicolon, "SELECT 3+5;\nSELECT 4+6");
+    Test_if(true, CheckSemicolon, "SELECT 3+5;  \nSELECT 4+6;");
+    Test_if(false, CheckSemicolon, "SELECT 3+5  ;  \nSELECT 4+6;");
 }
 
 TEST(LinterTest, UppercaseKeywordCheck) {
-    EXPECT_TRUE(CheckUppercaseKeywords(
-        "SELECT * FROM emp WHERE b = a OR c < d GROUP BY x").ok());
-    EXPECT_FALSE(CheckUppercaseKeywords(
-        "SELECT * FROM emp where b = a or c < d GROUP by x").ok());
+    Test_if(true, CheckUppercaseKeywords,
+        "SELECT * FROM emp WHERE b = a OR c < d GROUP BY x");
+    Test_if(true, CheckUppercaseKeywords,
+        "SELECT * FROM emp where b = a or c < d GROUP by x");
+    Test_if(false, CheckUppercaseKeywords,
+        "SeLEct * frOM emp wHEre b = a or c < d GROUP by x");
 }
 
 TEST(LinterTest, CommentTypeCheck) {
-    EXPECT_TRUE(CheckCommentType("//comment 1\nSELECT 3+5\n//comment 2").ok());
-    EXPECT_FALSE(CheckCommentType("//comment 1\nSELECT 3+5\n--comment 2").ok());
-    EXPECT_TRUE(CheckCommentType("--comment 1\nSELECT 3+5\n--comment 2").ok());
+    Test_if(true, CheckCommentType, "//comment 1\nSELECT 3+5\n//comment 2");
+    Test_if(false, CheckCommentType, "//comment 1\nSELECT 3+5\n--comment 2");
+    Test_if(true, CheckCommentType, "--comment 1\nSELECT 3+5\n--comment 2");
 
     // Check a sql containing a multiline comment.
-    EXPECT_TRUE(CheckCommentType(
-        "/* here is // and -- */SELECT 1+2 -- comment 2").ok());
+    Test_if(true, CheckCommentType,
+        "/* here is // and -- */SELECT 1+2 -- comment 2");
 
     // Check multiline string literal
-    EXPECT_TRUE(CheckCommentType(
-        "SELECT \"\"\"multiline\nstring--\nliteral\nhaving//--//\"\"\"").ok());
+    Test_if(true, CheckCommentType,
+        "SELECT \"\"\"multiline\nstring--\nliteral\nhaving//--//\"\"\"");
 }
 
 TEST(LinterTest, AliasKeywordCheck) {
-    EXPECT_TRUE(CheckAliasKeyword("SELECT * FROM emp AS X").ok());
-    EXPECT_FALSE(CheckAliasKeyword("SELECT * FROM emp X").ok());
-    EXPECT_TRUE(CheckAliasKeyword("SELECT 1 AS one").ok());
+    Test_if(true, CheckAliasKeyword, "SELECT * FROM emp AS X");
+    Test_if(false, CheckAliasKeyword, "SELECT * FROM emp X");
+    Test_if(true, CheckAliasKeyword, "SELECT 1 AS one");
 }
 
 }  // namespace

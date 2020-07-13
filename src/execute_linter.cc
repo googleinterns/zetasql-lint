@@ -22,15 +22,10 @@
 #include <streambuf>
 
 #include "absl/strings/string_view.h"
-#include "absl/strings/str_cat.h"
+#include "src/lint_errors.h"
+#include "src/linter.h"
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
-#include "zetasql/parser/parse_tree_visitor.h"
-#include "zetasql/parser/parse_tree.h"
-#include "zetasql/parser/parser.h"
-#include "zetasql/public/parse_helpers.h"
-#include "zetasql/public/parse_tokens.h"
-#include "zetasql/public/parse_resume_location.h"
 
 namespace zetasql::linter {
 
@@ -38,17 +33,17 @@ namespace zetasql::linter {
     // "LinterOptions" parameter will be added in future
     absl::Status run_checks(absl::string_view sql) {
         LinterResult result, output;
-        ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, output));
+        ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, &output));
         result.add(output);
-        ZETASQL_RETURN_IF_ERROR(CheckParserSucceeds(sql, output));
+        ZETASQL_RETURN_IF_ERROR(CheckParserSucceeds(sql, &output));
         result.add(output);
-        ZETASQL_RETURN_IF_ERROR(CheckSemicolon(sql, output));
+        ZETASQL_RETURN_IF_ERROR(CheckSemicolon(sql, &output));
         result.add(output);
-        ZETASQL_RETURN_IF_ERROR(CheckUppercaseKeywords(sql, output));
+        ZETASQL_RETURN_IF_ERROR(CheckUppercaseKeywords(sql, &output));
         result.add(output);
-        ZETASQL_RETURN_IF_ERROR(CheckCommentType(sql, output));
+        ZETASQL_RETURN_IF_ERROR(CheckCommentType(sql, &output));
         result.add(output);
-        ZETASQL_RETURN_IF_ERROR(CheckAliasKeyword(sql, output));
+        ZETASQL_RETURN_IF_ERROR(CheckAliasKeyword(sql, &output));
         result.add(output);
         return absl::OkStatus();
     }
