@@ -93,9 +93,19 @@ absl::Status CheckTabCharactersUniform(absl::string_view sql,
                                        const char allowed_indent = ' ',
                                        const char line_delimeter = '\n');
 
+// Checks whether there are no tabs in the code except indents.
+absl::Status CheckNoTabsBesidesIndentations(absl::string_view sql,
+                                            const char line_delimeter = '\n');
+
 // Constructs a text message with code position info.
 // <pos> represents the (line, position) in the code.
 std::string ConstructPositionMessage(std::pair<int, int> pos);
+
+// Constructs an absl::Status with <error_msg> message specified at
+// the <sql[index]> position.
+absl::Status ConstructErrorWithPosition(absl::string_view sql,
+                                        int index,
+                                        absl::string_view error_msg);
 
 }  // namespace zetasql::linter
 
