@@ -19,8 +19,8 @@
 
 #include <vector>
 
-#include "absl/strings/string_view.h"
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "zetasql/parser/parse_tree_visitor.h"
 #include "zetasql/parser/parser.h"
 #include "zetasql/public/parse_helpers.h"
@@ -31,15 +31,14 @@ namespace linter {
 
 class KeywordExtractor {
  public:
-    KeywordExtractor(const zetasql::ASTNode *_node,
-                     std::vector<const zetasql::ASTNode *> *_keywords)
-        : node(_node),
-          keywords(_keywords) {}
-    void extract();
+  KeywordExtractor(const zetasql::ASTNode *_node,
+                   std::vector<const zetasql::ASTNode *> *_keywords)
+      : node(_node), keywords(_keywords) {}
+  void extract();
 
  private:
-    const zetasql::ASTNode *node;
-    std::vector<const zetasql::ASTNode *> *keywords;
+  const zetasql::ASTNode *node;
+  std::vector<const zetasql::ASTNode *> *keywords;
 };
 
 // Checks whether given sql statement is a valid
@@ -49,7 +48,7 @@ absl::Status checkStatement(absl::string_view sql);
 // Checks if the number of characters in any line
 // exceed a certain treshold
 absl::Status checkLineLength(absl::string_view sql, int lineLimit = 100,
-    const char delimeter = '\n');
+                             const char delimeter = '\n');
 
 }  // namespace linter
 }  // namespace zetasql
