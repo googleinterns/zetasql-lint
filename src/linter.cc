@@ -22,6 +22,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
+#include "src/lint_errors.h"
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
 #include "zetasql/parser/parse_tree_visitor.h"
@@ -71,6 +72,7 @@ absl::Status CheckLineLength(absl::string_view sql, int line_limit,
             ++lineSize;
         }
         if ( lineSize > line_limit ) {
+            // TODO(orhanuysal): add proper error handling.
             return absl::Status(
                 absl::StatusCode::kFailedPrecondition,
                 absl::StrCat("Lines should be <= ", std::to_string(line_limit),
@@ -100,19 +102,19 @@ absl::Status CheckSemicolon(absl::string_view sql) {
     ParseResumeLocation location =
         ParseResumeLocation::FromStringView(sql);
     bool is_the_end = false;
+
     while ( !is_the_end ) {
         ZETASQL_RETURN_IF_ERROR(ParseNextScriptStatement(
             &location, ParserOptions(), &output, &is_the_end));
-        if ( !is_the_end ) {
-            int endLocation = output -> statement() -> GetParseLocationRange()
-                .end().GetByteOffset();
 
-            if ( endLocation < sql.size() && sql[endLocation] != ';' ) {
-                return absl::Status(
-                        absl::StatusCode::kFailedPrecondition,
-                        "Each statemnt should end with a consequtive"
-                        "semicolon ';'");
-            }
+        int location = output -> statement() -> GetParseLocationRange()
+            .end().GetByteOffset();
+
+        if ( location >= sql.size() || sql[location] != ';' ) {
+            return absl::Status(
+                    absl::StatusCode::kFailedPrecondition,
+                    "Each statemnt should end with a consequtive"
+                    "semicolon ';'");
         }
     }
     return absl::OkStatus();
@@ -157,6 +159,7 @@ absl::Status CheckUppercaseKeywords(absl::string_view sql) {
 absl::Status CheckCommentType(absl::string_view sql) {
     bool includes_type1 = false;
     bool includes_type2 = false;
+    bool includes_type3 = false;
     bool inside_string = false;
 
     for (int i = 1; i<static_cast<int>(sql.size()); ++i) {
@@ -171,6 +174,15 @@ absl::Status CheckCommentType(absl::string_view sql) {
 
         if (!inside_string && sql[i-1] == '/' && sql[i] == '/') {
             includes_type2 = true;
+            // ignore the line.
+            while ( i < static_cast<int>(sql.size()) &&
+                    sql[i] != '\n' ) {
+                ++i;
+            }
+        }
+
+        if (!inside_string && sql[i] == '#') {
+            includes_type3 = true;
             // ignore the line.
             while ( i < static_cast<int>(sql.size()) &&
                     sql[i] != '\n' ) {
@@ -194,7 +206,7 @@ absl::Status CheckCommentType(absl::string_view sql) {
             inside_string = !inside_string;
     }
 
-    if ( includes_type1 && includes_type2 )
+    if ( includes_type1 + includes_type2 + includes_type3 > 1 )
         return absl::Status(
                 absl::StatusCode::kFailedPrecondition,
                 "either '//' or '--' should be used to "
