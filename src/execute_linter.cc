@@ -29,9 +29,11 @@
 
 namespace zetasql::linter {
 
+namespace {
+
     // It runs all specified checks
-    // "LinterOptions" parameter will be added in future
-    absl::Status run_checks(absl::string_view sql) {
+    // "LinterOptions" parameter will be added in future.
+    absl::Status RunChecks(absl::string_view sql) {
         LinterResult result, output;
         ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, &output));
         result.Add(output);
@@ -55,6 +57,7 @@ namespace zetasql::linter {
         return absl::OkStatus();
     }
 
+}  // namespace
 }  // namespace zetasql::linter
 
 
@@ -71,7 +74,7 @@ int main(int argc, char* argv[]) {
                     std::istreambuf_iterator<char>());
     absl::string_view sql(str);
 
-    absl::Status status = zetasql::linter::run_checks(sql);
+    absl::Status status = zetasql::linter::RunChecks(sql);
 
     if (status.ok()) {
         return 0;

@@ -34,7 +34,7 @@ namespace {
 
 // TODO(orhanuysal): add advanced checks.
 // currently, these tests just check if the result is ok
-// number of lint errors or lint error itself is not checked
+// number of lint errors or lint error itself is not checked.
 
 void Test_if(bool expect,
     absl::Status (*lint_check)(absl::string_view, LinterResult*),
@@ -57,7 +57,7 @@ TEST(LinterTest, StatementLineLengthCheck) {
     "some long invalid sql statement that shouldn't stop check\n"
     "SELECT t from G\n";
 
-    // CheckLineLength is special and it will not use Test(..) function
+    // CheckLineLength is special and it will not use Test(..) function.
     LinterResult result;
     absl::Status status;
 
@@ -77,7 +77,7 @@ TEST(LinterTest, StatementLineLengthCheck) {
     status = CheckLineLength(multiline_sql, &result, 30);
     EXPECT_FALSE(result.ok());
 
-    // Just to erase warnings
+    // Just to erase warnings.
     EXPECT_TRUE(status.ok());
 }
 
@@ -120,7 +120,7 @@ TEST(LinterTest, CommentTypeCheck) {
     Test_if(true, CheckCommentType,
         "/* here is // and -- */SELECT 1+2 -- comment 2");
 
-    // Check multiline string literal
+    // Check multiline string literal.
     Test_if(true, CheckCommentType,
         "SELECT \"\"\"multiline\nstring--\nliteral\nhaving//--//\"\"\"");
 }
