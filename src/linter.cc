@@ -19,7 +19,6 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-#include <utility>
 
 #include "absl/strings/string_view.h"
 #include "absl/strings/str_cat.h"
@@ -243,6 +242,11 @@ absl::Status CheckAliasKeyword(absl::string_view sql) {
     }).ApplyTo(sql);
 }
 
+std::string ConstructPositionMessage(std::pair <int, int> pos) {
+    return absl::StrCat("line ", pos.first,
+                        " position ", pos.second);
+}
+
 absl::Status CheckTabCharactersUniform(absl::string_view sql,
     const char indent, const char delimeter) {
     bool is_indent = true;
@@ -266,9 +270,8 @@ absl::Status CheckTabCharactersUniform(absl::string_view sql,
                            absl::StatusCode::kFailedPrecondition,
                            absl::StrCat(
                            "Inconsistent use of indentation symbols: ",
-                           " expected \"", std::to_string(indent), "\"",
-                           " in line ", std::to_string(error_pos.first),
-                           " position ", std::to_string(error_pos.second)));
+                           "expected \"", std::string(1, indent), "\"",
+                           " in ", ConstructPositionMessage(error_pos)));
             }
             is_indent = false;
         }
