@@ -87,9 +87,9 @@ absl::Status CheckCommentType(absl::string_view sql);
 absl::Status CheckAliasKeyword(absl::string_view sql);
 
 // Checks whether all tab characters in indentations are equal to
-// <indent>.
+// <allowed_indent>.
 absl::Status CheckTabCharactersUniform(absl::string_view sql,
-    const char indent = ' ', const char delimeter = '\n');
+    const char allowed_indent = ' ', const char line_delimeter = '\n');
 
 
 // Constructs a text message with code position info.

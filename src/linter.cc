@@ -248,29 +248,27 @@ std::string ConstructPositionMessage(std::pair <int, int> pos) {
 }
 
 absl::Status CheckTabCharactersUniform(absl::string_view sql,
-    const char indent, const char delimeter) {
+    const char allowed_indent, const char line_delimeter) {
     bool is_indent = true;
     const char kSpace = ' ', kTab = '\t';
 
     for (int i=0; i<static_cast<int>(sql.size()); ++i) {
-        if ( sql[i] == delimeter ) {
+        if ( sql[i] == line_delimeter ) {
             is_indent = true;
-        } else if ( sql[i] != indent ) {
-            if ( (sql[i] == kTab || sql[i] == kSpace) && is_indent ) {
+        } else if ( is_indent && sql[i] != allowed_indent ) {
+            if ( sql[i] == kTab || sql[i] == kSpace ) {
                 // Return error on position <i>.
                 ParseLocationPoint lp =
                     ParseLocationPoint::FromByteOffset(i);
                 ParseLocationTranslator lt(sql);
-                zetasql_base::StatusOr <std::pair <int, int> > status_or_pos =
-                    lt.GetLineAndColumnAfterTabExpansion(lp);
-                ZETASQL_RETURN_IF_ERROR(status_or_pos.status());
-                std::pair <int, int> error_pos = status_or_pos.value();
+                ZETASQL_ASSIGN_OR_RETURN(auto error_pos,
+                    lt.GetLineAndColumnAfterTabExpansion(lp));
 
                 return absl::Status(
                            absl::StatusCode::kFailedPrecondition,
                            absl::StrCat(
                            "Inconsistent use of indentation symbols: ",
-                           "expected \"", std::string(1, indent), "\"",
+                           "expected \"", std::string(1, allowed_indent), "\"",
                            " in ", ConstructPositionMessage(error_pos)));
             }
             is_indent = false;
