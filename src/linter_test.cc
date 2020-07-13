@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "src/linter.h"
+#include "linter.h"
 
 #include "gtest/gtest.h"
 
