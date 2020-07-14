@@ -30,9 +30,6 @@ cc_library(
         "-Wno-return-type",
         "-Wno-sign-compare",
         "-Wno-switch",
-        "-Wno-unused-but-set-parameter",
-        "-Wno-unused-function",
-        #"-std=c++17",
     ],
     deps = ["@com_google_zetasql//zetasql/public:parse_helpers"],
 )

@@ -9,6 +9,6 @@ This is an internship project for Summer 2020.
 
 # Usage
 
-In order to run project, you can use this command :
+In order to run test, you can use this command :
     
-    `bazel run --cxxopt="-std=c++17" ...`
+    `bazel run --cxxopt="-std=c++17" //src:linter_test`
