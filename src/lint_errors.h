@@ -35,7 +35,7 @@ enum ErrorCode : int {
   kAlias = 7
 };
 
-// Its a class for saving properties of a one lint error.
+// Stores properties of a single lint error.
 class LintError {
  public:
   LintError(ErrorCode type, absl::string_view filename, int line)

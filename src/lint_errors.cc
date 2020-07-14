@@ -33,7 +33,7 @@ absl::string_view LintError::GetErrorMessage() {
     case kParseFailed:
       return "ZetaSQL parser failed";
     case kSemicolon:
-      return "Each statement should end with a consequtive selicolon ';'";
+      return "Each statement should end with a consequtive semicolon ';'";
     case kUppercase:
       return "All keywords should be consist of uppercase letters";
     case kCommentStyle:
