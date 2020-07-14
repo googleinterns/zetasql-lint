@@ -103,8 +103,7 @@ std::string ConstructPositionMessage(std::pair<int, int> pos);
 
 // Constructs an absl::Status with <error_msg> message specified at
 // the <sql[index]> position.
-absl::Status ConstructErrorWithPosition(absl::string_view sql,
-                                        int index,
+absl::Status ConstructErrorWithPosition(absl::string_view sql, int index,
                                         absl::string_view error_msg);
 
 }  // namespace zetasql::linter

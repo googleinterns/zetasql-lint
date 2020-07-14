@@ -123,18 +123,16 @@ TEST(LinterTest, TabCharactersUniformCheck) {
 }
 
 TEST(LinterTest, NoTabsBesidesIndentationsCheck) {
-  EXPECT_TRUE(CheckNoTabsBesidesIndentations(
-      "\tSELECT 5;\n\tSELECT 6;").ok());
-  EXPECT_TRUE(CheckNoTabsBesidesIndentations(
-      "\tSELECT   5;\n\t\tSELECT   6;").ok());
+  EXPECT_TRUE(CheckNoTabsBesidesIndentations("\tSELECT 5;\n\tSELECT 6;").ok());
+  EXPECT_TRUE(
+      CheckNoTabsBesidesIndentations("\tSELECT   5;\n\t\tSELECT   6;").ok());
 
   EXPECT_TRUE(absl::EndsWith(
-      CheckNoTabsBesidesIndentations(
-      "\tSELECT \t5;\n\t\tSELECT   6;").message(),
+      CheckNoTabsBesidesIndentations("\tSELECT \t5;\n\t\tSELECT   6;")
+          .message(),
       ConstructPositionMessage(std::make_pair(1, 16))));
   EXPECT_TRUE(absl::EndsWith(
-      CheckNoTabsBesidesIndentations(
-      "\tSELECT 5;\nS\tELECT 6;").message(),
+      CheckNoTabsBesidesIndentations("\tSELECT 5;\nS\tELECT 6;").message(),
       ConstructPositionMessage(std::make_pair(2, 2))));
 }
 

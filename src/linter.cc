@@ -250,19 +250,15 @@ std::string ConstructPositionMessage(std::pair<int, int> pos) {
   return absl::StrCat("line ", pos.first, " position ", pos.second);
 }
 
-absl::Status ConstructErrorWithPosition(absl::string_view sql,
-                                        int index,
+absl::Status ConstructErrorWithPosition(absl::string_view sql, int index,
                                         absl::string_view error_msg) {
-  ParseLocationPoint lp =
-    ParseLocationPoint::FromByteOffset(index);
+  ParseLocationPoint lp = ParseLocationPoint::FromByteOffset(index);
   ParseLocationTranslator lt(sql);
-  std::pair <int, int> error_pos;
-  ZETASQL_ASSIGN_OR_RETURN(error_pos,
-    lt.GetLineAndColumnAfterTabExpansion(lp));
+  std::pair<int, int> error_pos;
+  ZETASQL_ASSIGN_OR_RETURN(error_pos, lt.GetLineAndColumnAfterTabExpansion(lp));
   return absl::Status(
-           absl::StatusCode::kFailedPrecondition,
-           absl::StrCat(
-           error_msg, " in ", ConstructPositionMessage(error_pos)));
+      absl::StatusCode::kFailedPrecondition,
+      absl::StrCat(error_msg, " in ", ConstructPositionMessage(error_pos)));
 }
 
 absl::Status CheckTabCharactersUniform(absl::string_view sql,
@@ -276,11 +272,10 @@ absl::Status CheckTabCharactersUniform(absl::string_view sql,
       is_indent = true;
     } else if (is_indent && sql[i] != allowed_indent) {
       if (sql[i] == kTab || sql[i] == kSpace) {
-        return ConstructErrorWithPosition(sql, i,
-                 absl::StrCat(
-                 "Inconsistent use of indentation symbols: ",
-                 "expected \"", std::string(1, allowed_indent),
-                 "\""));
+        return ConstructErrorWithPosition(
+            sql, i,
+            absl::StrCat("Inconsistent use of indentation symbols: ",
+                         "expected \"", std::string(1, allowed_indent), "\""));
       }
       is_indent = false;
     }
@@ -301,9 +296,9 @@ absl::Status CheckNoTabsBesidesIndentations(absl::string_view sql,
     } else if (sql[i] != kSpace && sql[i] != kTab) {
       is_indent = false;
     } else if (sql[i] == kTab && !is_indent) {
-      return ConstructErrorWithPosition(sql, i,
-               absl::string_view(
-               "Tab not in the indentation, expected space"));
+      return ConstructErrorWithPosition(
+          sql, i,
+          absl::string_view("Tab not in the indentation, expected space"));
     }
   }
 
