@@ -35,23 +35,23 @@ namespace {
 // "LinterOptions" parameter will be added in future.
 absl::Status RunChecks(absl::string_view sql) {
   LinterResult result, output;
-  ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, &output));
-  result.Add(output);
-  output.clear();
-  ZETASQL_RETURN_IF_ERROR(CheckParserSucceeds(sql, &output));
-  result.Add(output);
-  output.clear();
-  ZETASQL_RETURN_IF_ERROR(CheckSemicolon(sql, &output));
-  result.Add(output);
-  output.clear();
-  ZETASQL_RETURN_IF_ERROR(CheckUppercaseKeywords(sql, &output));
-  result.Add(output);
-  output.clear();
-  ZETASQL_RETURN_IF_ERROR(CheckCommentType(sql, &output));
-  result.Add(output);
-  output.clear();
-  ZETASQL_RETURN_IF_ERROR(CheckAliasKeyword(sql, &output));
-  result.Add(output);
+  // ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, &output));
+  // result.Add(output);
+  // output.clear();
+  // ZETASQL_RETURN_IF_ERROR(CheckParserSucceeds(sql, &output));
+  // result.Add(output);
+  // output.clear();
+  // ZETASQL_RETURN_IF_ERROR(CheckSemicolon(sql, &output));
+  // result.Add(output);
+  // output.clear();
+  // ZETASQL_RETURN_IF_ERROR(CheckUppercaseKeywords(sql, &output));
+  // result.Add(output);
+  // output.clear();
+  // ZETASQL_RETURN_IF_ERROR(CheckCommentType(sql, &output));
+  // result.Add(output);
+  // output.clear();
+  // ZETASQL_RETURN_IF_ERROR(CheckAliasKeyword(sql, &output));
+  // result.Add(output);
   std::cout << "Linter completed running." << std::endl;
   result.PrintResult();
   return absl::OkStatus();
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
   if (status.ok()) {
     return 0;
   } else {
-    std::cout << "ERROR: " << status << std::endl;
+    std::cerr << "ERROR: " << status << std::endl;
     return 1;
   }
 }

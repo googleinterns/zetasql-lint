@@ -73,8 +73,11 @@ TEST(LinterTest, UppercaseKeywordCheck) {
   EXPECT_TRUE(CheckUppercaseKeywords(
                   "SELECT * FROM emp WHERE b = a OR c < d GROUP BY x")
                   .ok());
-  EXPECT_FALSE(CheckUppercaseKeywords(
+  EXPECT_TRUE(CheckUppercaseKeywords(
                    "SELECT * FROM emp where b = a or c < d GROUP by x")
+                   .ok());
+  EXPECT_FALSE(CheckUppercaseKeywords(
+                   "SeLEct * frOM emp wHEre b = a or c < d GROUP by x")
                    .ok());
 }
 
@@ -111,31 +114,33 @@ TEST(LinterTest, TabCharactersUniformCheck) {
       CheckTabCharactersUniform("\tSELECT 5;\n\t\tSELECT 6;", '\t').ok());
   EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n SELECT\t6;\t").ok());
 
-  EXPECT_TRUE(absl::EndsWith(
-      CheckTabCharactersUniform("SELECT 5;\n \t SELECT 6;").message(),
-      ConstructPositionMessage(std::make_pair(2, 2))));
-  EXPECT_TRUE(absl::EndsWith(
-      CheckTabCharactersUniform("  SELECT kek;\n\tSELECT lol;").message(),
-      ConstructPositionMessage(std::make_pair(2, 1))));
-  EXPECT_TRUE(absl::EndsWith(
-      CheckTabCharactersUniform("SELECT 5;\n  SELECT 6;", '\t').message(),
-      ConstructPositionMessage(std::make_pair(2, 1))));
+  EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n \t SELECT 6;")
+                  .GetErrors()
+                  .back()
+                  .GetPosition() == std::make_pair(2, 2));
+  EXPECT_TRUE(CheckTabCharactersUniform("  SELECT kek;\n\tSELECT lol;")
+                  .GetErrors()
+                  .back()
+                  .GetPosition() == std::make_pair(2, 1));
+  EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n  SELECT 6;", '\t')
+                  .GetErrors()
+                  .back()
+                  .GetPosition() == std::make_pair(2, 1));
 }
 
 TEST(LinterTest, NoTabsBesidesIndentationsCheck) {
-  EXPECT_TRUE(CheckNoTabsBesidesIndentations(
-      "\tSELECT 5;\n\tSELECT 6;").ok());
-  EXPECT_TRUE(CheckNoTabsBesidesIndentations(
-      "\tSELECT   5;\n\t\tSELECT   6;").ok());
+  EXPECT_TRUE(CheckNoTabsBesidesIndentations("\tSELECT 5;\n\tSELECT 6;").ok());
+  EXPECT_TRUE(
+      CheckNoTabsBesidesIndentations("\tSELECT   5;\n\t\tSELECT   6;").ok());
 
-  EXPECT_TRUE(absl::EndsWith(
-      CheckNoTabsBesidesIndentations(
-      "\tSELECT \t5;\n\t\tSELECT   6;").message(),
-      ConstructPositionMessage(std::make_pair(1, 16))));
-  EXPECT_TRUE(absl::EndsWith(
-      CheckNoTabsBesidesIndentations(
-      "\tSELECT 5;\nS\tELECT 6;").message(),
-      ConstructPositionMessage(std::make_pair(2, 2))));
+  EXPECT_TRUE(CheckNoTabsBesidesIndentations("\tSELECT \t5;\n\t\tSELECT   6;")
+                  .GetErrors()
+                  .back()
+                  .GetPosition() == std::make_pair(1, 16));
+  EXPECT_TRUE(CheckNoTabsBesidesIndentations("\tSELECT 5;\nS\tELECT 6;")
+                      .GetErrors()
+                      .back()
+                      .GetPosition() == std::make_pair(2, 2));
 }
 
 }  // namespace

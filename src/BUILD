@@ -72,6 +72,7 @@ cc_binary(
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ]
 )
+
 cc_test(
     name = "linter_test",
     size = "small",

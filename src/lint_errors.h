@@ -17,7 +17,9 @@
 #ifndef SRC_LINT_ERRORS_H_
 #define SRC_LINT_ERRORS_H_
 
+#include <utility>
 #include <vector>
+#include <string>
 
 #include "absl/strings/string_view.h"
 #include "zetasql/base/status.h"
@@ -26,25 +28,34 @@ namespace zetasql {
 
 namespace linter {
 
-enum ErrorCode : int {
+enum class ErrorCode : int {
   kLineLimit = 1,
   kParseFailed = 2,
   kSemicolon = 3,
   kUppercase = 4,
   kCommentStyle = 6,
-  kAlias = 7
+  kAlias = 7,
+  kUniformTab = 16,
+  kNoIndentTab = 17
 };
 
 // Stores properties of a single lint error.
 class LintError {
  public:
-  LintError(ErrorCode type, absl::string_view filename, int line)
-      : type_(type), filename_(filename), line_(line) {}
-
-  LintError(ErrorCode type, int line)
-      : type_(type), filename_(""), line_(line) {}
+  LintError(ErrorCode type, absl::string_view filename, int line, int column,
+            absl::string_view message)
+      : type_(type),
+        filename_(filename),
+        line_(line),
+        column_(column),
+        message_(message) {}
 
   absl::string_view GetErrorMessage();
+
+  std::pair<int, int> GetPosition() { return std::make_pair(line_, column_); }
+
+  // Constructs a text message with code position info.
+  std::string ConstructPositionMessage();
 
   void PrintError();
 
@@ -60,24 +71,40 @@ class LintError {
 
   // Line number where the lint error occured.
   int line_;
+
+  // Column number where the lint error occured.
+  int column_;
+
+  // Error message
+  absl::string_view message_ = "";
 };
 
+// It is the result of a linter run.
+// Result of a linter run is cumilative results of
+// linter check. Linter checks can fail checking on the querry
+// and return status, or it can successfully work and return list
+// of lint errors.
 class LinterResult {
  public:
   LinterResult() {}
+    // : errors_(std::vector<LintError>()),
+    //   status_(std::vector<absl::Status>()) {}
 
-  explicit LinterResult(const LinterResult &result);
+  LinterResult(const LinterResult &result);
+
+  explicit LinterResult(const absl::Status &status);
 
   // This function adds a new lint error that occured in 'sql' in
   // location 'character_location', and 'type' refers to
   // the type of linter check that is failed.
 
   void Add(ErrorCode type, absl::string_view filename, absl::string_view sql,
-           int character_location);
+           int character_location, absl::string_view message);
 
   // Basicly does the same with above function without a
   // specific filename.
-  void Add(ErrorCode type, absl::string_view sql, int character_location);
+  void Add(ErrorCode type, absl::string_view sql, int character_location,
+           absl::string_view message);
 
   // This function adds all errors in 'result' to this
   // It basicly combines two result.
@@ -90,11 +117,13 @@ class LinterResult {
   void clear();
 
   std::vector<LintError> GetErrors() const { return errors_; }
+  std::vector<absl::Status> GetStatus() const { return status_; }
 
   void PrintResult();
 
  private:
   std::vector<LintError> errors_;
+  std::vector<absl::Status> status_;
 };
 
 }  // namespace linter

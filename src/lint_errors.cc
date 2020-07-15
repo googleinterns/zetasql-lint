@@ -16,43 +16,34 @@
 #include "src/lint_errors.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
+#include <utility>
 #include <vector>
+#include <string>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "zetasql/base/status.h"
+#include "zetasql/base/status_macros.h"
+#include "zetasql/base/statusor.h"
+#include "zetasql/public/parse_helpers.h"
+#include "zetasql/public/parse_location.h"
 
 namespace zetasql::linter {
 
-absl::string_view LintError::GetErrorMessage() {
-  // Refers to the error type
-  switch (type_) {
-    case kLineLimit:
-      return "Lines should be <= 100 characters long";
-    case kParseFailed:
-      return "ZetaSQL parser failed";
-    case kSemicolon:
-      return "Each statement should end with a consequtive semicolon ';'";
-    case kUppercase:
-      return "All keywords should be consist of uppercase letters";
-    case kCommentStyle:
-      return "Either '//' or '--' should be used to specify a comment";
-    case kAlias:
-      return "Always use AS keyword for referencing aliases";
-      break;
-    default:
-      break;
-  }
-  return "";
+absl::string_view LintError::GetErrorMessage() { return message_; }
+
+std::string LintError::ConstructPositionMessage() {
+  return absl::StrCat("In line ", line_, ", column ", column_, ":");
 }
 
 void LintError::PrintError() {
   if (filename_ == "") {
-    std::cout << "In line " << line_ << ": " << GetErrorMessage() << std::endl;
+    std::cout << ConstructPositionMessage() << GetErrorMessage() << std::endl;
   } else {
-    std::cout << filename_ << ":" << line_ << ": " << GetErrorMessage()
-              << std::endl;
+    std::cout << filename_ << ":" << ConstructPositionMessage()
+      << GetErrorMessage() << std::endl;
   }
 }
 
@@ -63,31 +54,49 @@ void LinterResult::PrintResult() {
          return a.getLineNumber() < b.getLineNumber();
        });
   for (LintError error : errors_) error.PrintError();
+
+  for (absl::Status status : status_) std::cerr << status << std::endl;
+
+  std::cout << "Linter results are printed" << std::endl;
 }
 
-LinterResult::LinterResult(const LinterResult &result) {
-  errors_ = result.GetErrors();
+LinterResult::LinterResult(const LinterResult &result) { Add(result); }
+LinterResult::LinterResult(const absl::Status &status) {
+  if (!status.ok())
+    status_.push_back(status);
 }
+
 
 void LinterResult::Add(ErrorCode type, absl::string_view filename,
-                       absl::string_view sql, int character_location) {
-  int line_number = 1;
-  for (int i = 0; i < character_location; ++i)
-    if (sql[i] == '\n') ++line_number;
-  errors_.push_back(LintError(type, filename, line_number));
+                       absl::string_view sql, int character_location,
+                       absl::string_view message) {
+  ParseLocationPoint lp =
+      ParseLocationPoint::FromByteOffset(character_location);
+  ParseLocationTranslator lt(sql);
+  zetasql_base::StatusOr<std::pair<int, int>> status_or_pos =
+      lt.GetLineAndColumnAfterTabExpansion(lp);
+  if (!status_or_pos.ok()) {
+    return;
+  }
+  std::pair<int, int> error_pos = status_or_pos.value();
+  errors_.push_back(
+      LintError(type, filename, error_pos.first, error_pos.second, message));
 }
 
 void LinterResult::Add(ErrorCode type, absl::string_view sql,
-                       int character_location) {
-  Add(type, "", sql, character_location);
+                       int character_location, absl::string_view message) {
+  Add(type, "", sql, character_location, message);
 }
 
 void LinterResult::Add(const LinterResult &result) {
   std::vector<LintError> errors = result.GetErrors();
   for (LintError error : errors) errors_.push_back(error);
+
+  std::vector<absl::Status> allStatus = result.GetStatus();
+  for (absl::Status status : allStatus) status_.push_back(status);
 }
 
-bool LinterResult::ok() { return errors_.empty(); }
+bool LinterResult::ok() { return errors_.empty() && status_.empty(); }
 
 void LinterResult::clear() { errors_.clear(); }
 
