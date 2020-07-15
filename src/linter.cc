@@ -21,18 +21,18 @@
 #include <utility>
 #include <vector>
 
-// #include "absl/strings/str_cat.h"
-// #include "absl/strings/string_view.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "src/lint_errors.h"
-// #include "zetasql/base/status.h"
-// #include "zetasql/base/status_macros.h"
-// #include "zetasql/base/statusor.h"
-// #include "zetasql/parser/parse_tree.h"
-// #include "zetasql/parser/parse_tree_visitor.h"
-// #include "zetasql/parser/parser.h"
-// #include "zetasql/public/parse_helpers.h"
-// #include "zetasql/public/parse_location.h"
-// #include "zetasql/public/parse_resume_location.h"
+#include "zetasql/base/status.h"
+#include "zetasql/base/status_macros.h"
+#include "zetasql/base/statusor.h"
+#include "zetasql/parser/parse_tree.h"
+#include "zetasql/parser/parse_tree_visitor.h"
+#include "zetasql/parser/parser.h"
+#include "zetasql/public/parse_helpers.h"
+#include "zetasql/public/parse_location.h"
+#include "zetasql/public/parse_resume_location.h"
 #include "zetasql/public/parse_tokens.h"
 
 // Implemented rules in the same order with rules in the documention.
@@ -78,9 +78,9 @@ LinterResult CheckLineLength(absl::string_view sql, int line_limit,
 
     if (lineSize > line_limit && line_number > last_added) {
       last_added = line_number;
-      result.Add(
-          ErrorCode::kLineLimit, sql, i,
-          absl::StrCat("Lines should be <= ", line_limit, " characters long"));
+      result.Add(ErrorCode::kLineLimit, sql, i,
+                 absl::StrCat("Lines should be <= ", std::to_string(line_limit),
+                              " characters long"));
     }
   }
   return result;

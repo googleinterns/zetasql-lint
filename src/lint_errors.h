@@ -42,6 +42,8 @@ enum class ErrorCode : int {
 // Stores properties of a single lint error.
 class LintError {
  public:
+  LintError(const LintError &result);
+
   LintError(ErrorCode type, absl::string_view filename, int line, int column,
             absl::string_view message)
       : type_(type),
@@ -57,6 +59,8 @@ class LintError {
   // Constructs a text message with code position info.
   std::string ConstructPositionMessage();
 
+  // This function outputs lint errors of successful checks
+  // and status messages of failed checks.
   void PrintError();
 
   int getLineNumber() const { return line_; }
@@ -75,7 +79,7 @@ class LintError {
   // Column number where the lint error occured.
   int column_;
 
-  // Error message
+  // Error message that will be printed.
   absl::string_view message_ = "";
 };
 
@@ -86,9 +90,9 @@ class LintError {
 // of lint errors.
 class LinterResult {
  public:
-  LinterResult() {}
-    // : errors_(std::vector<LintError>()),
-    //   status_(std::vector<absl::Status>()) {}
+  LinterResult()
+    : errors_(std::vector<LintError>()),
+      status_(std::vector<absl::Status>()) {}
 
   LinterResult(const LinterResult &result);
 
@@ -110,10 +114,10 @@ class LinterResult {
   // It basicly combines two result.
   void Add(const LinterResult &result);
 
-  // Returns if any lint error occured
+  // Returns if any lint error occured.
   bool ok();
 
-  // Clears all errors
+  // Clears all errors.
   void clear();
 
   std::vector<LintError> GetErrors() const { return errors_; }

@@ -74,8 +74,8 @@ TEST(LinterTest, UppercaseKeywordCheck) {
                   "SELECT * FROM emp WHERE b = a OR c < d GROUP BY x")
                   .ok());
   EXPECT_TRUE(CheckUppercaseKeywords(
-                   "SELECT * FROM emp where b = a or c < d GROUP by x")
-                   .ok());
+                  "SELECT * FROM emp where b = a or c < d GROUP by x")
+                  .ok());
   EXPECT_FALSE(CheckUppercaseKeywords(
                    "SeLEct * frOM emp wHEre b = a or c < d GROUP by x")
                    .ok());
@@ -138,9 +138,9 @@ TEST(LinterTest, NoTabsBesidesIndentationsCheck) {
                   .back()
                   .GetPosition() == std::make_pair(1, 16));
   EXPECT_TRUE(CheckNoTabsBesidesIndentations("\tSELECT 5;\nS\tELECT 6;")
-                      .GetErrors()
-                      .back()
-                      .GetPosition() == std::make_pair(2, 2));
+                  .GetErrors()
+                  .back()
+                  .GetPosition() == std::make_pair(2, 2));
 }
 
 }  // namespace

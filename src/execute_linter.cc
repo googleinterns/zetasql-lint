@@ -34,24 +34,15 @@ namespace {
 // It runs all specified checks
 // "LinterOptions" parameter will be added in future.
 absl::Status RunChecks(absl::string_view sql) {
-  LinterResult result, output;
-  // ZETASQL_RETURN_IF_ERROR(CheckLineLength(sql, &output));
-  // result.Add(output);
-  // output.clear();
-  // ZETASQL_RETURN_IF_ERROR(CheckParserSucceeds(sql, &output));
-  // result.Add(output);
-  // output.clear();
-  // ZETASQL_RETURN_IF_ERROR(CheckSemicolon(sql, &output));
-  // result.Add(output);
-  // output.clear();
-  // ZETASQL_RETURN_IF_ERROR(CheckUppercaseKeywords(sql, &output));
-  // result.Add(output);
-  // output.clear();
-  // ZETASQL_RETURN_IF_ERROR(CheckCommentType(sql, &output));
-  // result.Add(output);
-  // output.clear();
-  // ZETASQL_RETURN_IF_ERROR(CheckAliasKeyword(sql, &output));
-  // result.Add(output);
+  LinterResult result;
+  result.Add(CheckLineLength(sql));
+  result.Add(CheckParserSucceeds(sql));
+  result.Add(CheckSemicolon(sql));
+  result.Add(CheckUppercaseKeywords(sql));
+  result.Add(CheckCommentType(sql));
+  result.Add(CheckAliasKeyword(sql));
+  result.Add(CheckTabCharactersUniform(sql));
+  result.Add(CheckNoTabsBesidesIndentations(sql));
   std::cout << "Linter completed running." << std::endl;
   result.PrintResult();
   return absl::OkStatus();
@@ -64,16 +55,19 @@ int main(int argc, char* argv[]) {
   if (argc <= 2) {
     std::cout << "Usage: execute_linter < <file_name>\n" << std::endl;
   }
-  char* filename = argv[argc - 1];
+  // Bazel only work with pre-defined data files.
+  // Later bazel rule will be added, but for now,
+  // testing will be conducted with example.sql.
+  // Any sql file to be lint can be copied to this file.
+  char* filename = "src/example.sql";
 
   std::cout << filename << std::endl;
 
   std::ifstream t(filename);
   std::string str((std::istreambuf_iterator<char>(t)),
                   std::istreambuf_iterator<char>());
-  absl::string_view sql(str);
 
-  absl::Status status = zetasql::linter::RunChecks(sql);
+  absl::Status status = zetasql::linter::RunChecks(absl::string_view(str));
 
   if (status.ok()) {
     return 0;

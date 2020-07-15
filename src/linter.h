@@ -100,8 +100,6 @@ LinterResult CheckTabCharactersUniform(absl::string_view sql,
 LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
                                             const char line_delimeter = '\n');
 
-std::string ConstructPositionMessage(std::pair<int, int> pos);
-
 }  // namespace zetasql::linter
 
 #endif  // SRC_LINTER_H_

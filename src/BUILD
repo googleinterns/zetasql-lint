@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
-licenses(["notice"])  # Apache v2.0
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+licenses(["notice"])  # Apache v2.0
 
 cc_library(
     name = "linter",
