@@ -17,9 +17,9 @@
 #ifndef SRC_LINT_ERRORS_H_
 #define SRC_LINT_ERRORS_H_
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 #include "absl/strings/string_view.h"
 #include "zetasql/base/status.h"
@@ -91,8 +91,8 @@ class LintError {
 class LinterResult {
  public:
   LinterResult()
-    : errors_(std::vector<LintError>()),
-      status_(std::vector<absl::Status>()) {}
+      : errors_(std::vector<LintError>()),
+        status_(std::vector<absl::Status>()) {}
 
   LinterResult(const LinterResult &result);
 
@@ -102,8 +102,9 @@ class LinterResult {
   // location 'character_location', and 'type' refers to
   // the type of linter check that is failed.
 
-  void Add(ErrorCode type, absl::string_view filename, absl::string_view sql,
-           int character_location, absl::string_view message);
+  absl::Status Add(ErrorCode type, absl::string_view filename,
+                   absl::string_view sql, int character_location,
+                   absl::string_view message);
 
   // Basicly does the same with above function without a
   // specific filename.

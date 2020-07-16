@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 
 licenses(["notice"])  # Apache v2.0
 
@@ -64,13 +64,13 @@ cc_binary(
         "-Wno-switch",
     ],
     data = [
-        ":example.sql"
+        ":example.sql",
     ],
     deps = [
-        ":linter",
         ":lint_errors",
+        ":linter",
         "@com_google_zetasql//zetasql/public:parse_helpers",
-    ]
+    ],
 )
 
 cc_test(
@@ -78,9 +78,9 @@ cc_test(
     size = "small",
     srcs = ["linter_test.cc"],
     deps = [
-        ":linter",
         ":lint_errors",
+        ":linter",
         "@com_google_googletest//:gtest_main",
         "@com_google_zetasql//zetasql/public:parse_helpers",
-    ]
+    ],
 )

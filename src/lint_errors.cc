@@ -57,7 +57,6 @@ void LintError::PrintError() {
 }
 
 void LinterResult::PrintResult() {
-  for (LintError error : errors_) error.PrintError();
   // Need to sort according to increasing line number
   sort(errors_.begin(), errors_.end(),
        [&](const LintError &a, const LintError &b) {
@@ -75,21 +74,15 @@ LinterResult::LinterResult(const absl::Status &status) {
   if (!status.ok()) status_.push_back(status);
 }
 
-void LinterResult::Add(ErrorCode type, absl::string_view filename,
+absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
                        absl::string_view sql, int character_location,
                        absl::string_view message) {
-  int line_number = 0;
-  int column_number = 1;
-  // When LinterOptions(getting config from user) is implemented,
-  // this '\n' will be replaced with 'options.delimeter'.
-  for (int i = 0; i < character_location; ++i)
-    if (sql[i] == '\n') {
-      ++line_number;
-      column_number = 1;
-    } else {
-      ++column_number;
-    }
-  LintError t(type, filename, line_number, column_number, message);
+  ParseLocationPoint lp =
+      ParseLocationPoint::FromByteOffset(character_location);
+  ParseLocationTranslator lt(sql);
+  std::pair<int, int> error_pos;
+  ZETASQL_ASSIGN_OR_RETURN(error_pos, lt.GetLineAndColumnAfterTabExpansion(lp));
+  LintError t(type, filename, error_pos.first, error_pos.second, message);
   errors_.push_back(t);
 }
 
