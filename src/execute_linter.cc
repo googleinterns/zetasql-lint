@@ -52,20 +52,15 @@ absl::Status RunChecks(absl::string_view sql) {
 }  // namespace zetasql::linter
 
 int main(int argc, char* argv[]) {
-  if (argc <= 2) {
+  if (argc < 1) {
     std::cout << "Usage: execute_linter < <file_name>\n" << std::endl;
+    return 1;
   }
-  // Bazel only work with pre-defined data files.
-  // Later bazel rule will be added, but for now,
-  // testing will be conducted with example.sql.
-  // Any sql file to be lint can be copied to this file.
-  char* filename = "src/example.sql";
 
-  std::cout << filename << std::endl;
-
-  std::ifstream t(filename);
-  std::string str((std::istreambuf_iterator<char>(t)),
-                  std::istreambuf_iterator<char>());
+  std::string str;
+  for (std::string line; std::getline(std::cin, line);) {
+      str += line + "\n";
+  }
 
   absl::Status status = zetasql::linter::RunChecks(absl::string_view(str));
 

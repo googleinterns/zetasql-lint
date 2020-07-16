@@ -63,9 +63,6 @@ cc_binary(
         "-Wno-sign-compare",
         "-Wno-switch",
     ],
-    data = [
-        ":example.sql",
-    ],
     deps = [
         ":lint_errors",
         ":linter",
