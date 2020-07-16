@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 
   std::string str;
   for (std::string line; std::getline(std::cin, line);) {
-      str += line + "\n";
+    str += line + "\n";
   }
 
   absl::Status status = zetasql::linter::RunChecks(absl::string_view(str));
