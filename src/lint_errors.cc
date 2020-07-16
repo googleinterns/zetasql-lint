@@ -75,8 +75,8 @@ LinterResult::LinterResult(const absl::Status &status) {
 }
 
 absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
-                       absl::string_view sql, int character_location,
-                       absl::string_view message) {
+                               absl::string_view sql, int character_location,
+                               absl::string_view message) {
   ParseLocationPoint lp =
       ParseLocationPoint::FromByteOffset(character_location);
   ParseLocationTranslator lt(sql);
