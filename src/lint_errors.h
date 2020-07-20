@@ -94,8 +94,7 @@ class LinterResult {
  public:
   LinterResult()
       : errors_(std::vector<LintError>()),
-        status_(std::vector<absl::Status>()) {
-  }
+        status_(std::vector<absl::Status>()) {}
 
   LinterResult(const LinterResult &result);
 
