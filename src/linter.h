@@ -41,9 +41,12 @@ class RuleVisitor : public NonRecursiveParseTreeVisitor {
               const absl::string_view &sql)
       : rule_(rule), sql_(sql), result_(absl::OkStatus()) {}
 
+  // It is a function that will be invoked each time a new
+  // node is visited.
   zetasql_base::StatusOr<VisitResult> defaultVisit(
       const ASTNode *node) override;
 
+  // Returns the cumulative result of all rules that applied.
   LinterResult GetResult() { return result_; }
 
  private:
@@ -60,6 +63,8 @@ class ASTNodeRule {
                        LinterResult(const ASTNode *, const absl::string_view &)>
                            rule)
       : rule_(rule) {}
+
+  // It applies the rule stored in this class to a sql statement.
   LinterResult ApplyTo(absl::string_view sql);
 
  private:

@@ -78,11 +78,12 @@ LinterResult CheckLineLength(absl::string_view sql, int line_limit,
 
     if (lineSize > line_limit && line_number > last_added) {
       last_added = line_number;
-      result.Add(ErrorCode::kLineLimit, sql, i,
-                 absl::StrCat("Lines should be <= ", std::to_string(line_limit),
-                              " characters long"));
+      result.Add(
+          ErrorCode::kLineLimit, sql, i,
+          absl::StrCat("Lines should be <= ", line_limit, " characters long"));
     }
   }
+  result.PrintResult();
   return result;
 }
 
@@ -190,12 +191,13 @@ LinterResult CheckCommentType(absl::string_view sql, char delimeter) {
     if (sql[i] == '#') type = "#";
 
     if (type != "") {
-      if (type == "--")
+      if (type == "--") {
         dash_comment = true;
-      else if (type == "//")
+      } else if (type == "//") {
         slash_comment = true;
-      else
+      } else {
         hash_comment = true;
+      }
 
       if (dash_comment + slash_comment + hash_comment == 1)
         first_type = type;

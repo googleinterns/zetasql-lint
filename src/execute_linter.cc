@@ -30,10 +30,9 @@
 namespace zetasql::linter {
 
 namespace {
-
 // It runs all specified checks
 // "LinterOptions" parameter will be added in future.
-absl::Status RunChecks(absl::string_view sql) {
+LinterResult RunChecks(absl::string_view sql) {
   LinterResult result;
   result.Add(CheckLineLength(sql));
   result.Add(CheckParserSucceeds(sql));
@@ -43,9 +42,7 @@ absl::Status RunChecks(absl::string_view sql) {
   result.Add(CheckAliasKeyword(sql));
   result.Add(CheckTabCharactersUniform(sql));
   result.Add(CheckNoTabsBesidesIndentations(sql));
-  std::cout << "Linter completed running." << std::endl;
-  result.PrintResult();
-  return absl::OkStatus();
+  return result;
 }
 
 }  // namespace
@@ -61,13 +58,10 @@ int main(int argc, char* argv[]) {
   for (std::string line; std::getline(std::cin, line);) {
     str += line + "\n";
   }
+  zetasql::linter::LinterResult result =
+      zetasql::linter::RunChecks(absl::string_view(str));
 
-  absl::Status status = zetasql::linter::RunChecks(absl::string_view(str));
+  result.PrintResult();
 
-  if (status.ok()) {
-    return 0;
-  } else {
-    std::cerr << "ERROR: " << status << std::endl;
-    return 1;
-  }
+  return 0;
 }

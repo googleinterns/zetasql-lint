@@ -32,15 +32,6 @@
 
 namespace zetasql::linter {
 
-// Copy constructor for Lint Error
-LintError::LintError(const LintError &result) {
-  type_ = result.type_;
-  filename_ = result.filename_;
-  line_ = result.line_;
-  column_ = result.column_;
-  message_ = result.message_;
-}
-
 absl::string_view LintError::GetErrorMessage() { return message_; }
 
 std::string LintError::ConstructPositionMessage() {
@@ -60,7 +51,7 @@ void LinterResult::PrintResult() {
   // Need to sort according to increasing line number
   sort(errors_.begin(), errors_.end(),
        [&](const LintError &a, const LintError &b) {
-         return a.getLineNumber() < b.getLineNumber();
+         return a.GetLineNumber() < b.GetLineNumber();
        });
   for (LintError error : errors_) error.PrintError();
 
@@ -84,6 +75,7 @@ absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
   ZETASQL_ASSIGN_OR_RETURN(error_pos, lt.GetLineAndColumnAfterTabExpansion(lp));
   LintError t(type, filename, error_pos.first, error_pos.second, message);
   errors_.push_back(t);
+  return absl::OkStatus();
 }
 
 void LinterResult::Add(ErrorCode type, absl::string_view sql,
@@ -91,12 +83,11 @@ void LinterResult::Add(ErrorCode type, absl::string_view sql,
   Add(type, "", sql, character_location, message);
 }
 
-void LinterResult::Add(const LinterResult &result) {
-  std::vector<LintError> errors = result.GetErrors();
-  for (LintError error : errors) errors_.push_back(error);
-
-  std::vector<absl::Status> allStatus = result.GetStatus();
-  for (absl::Status status : allStatus) status_.push_back(status);
+void LinterResult::Add(LinterResult result) {
+  for (LintError error : result.GetErrors())
+    errors_.push_back(error), error.PrintError();
+  for (absl::Status status : result.GetStatus()) status_.push_back(status);
+  PrintResult();
 }
 
 bool LinterResult::ok() { return errors_.empty() && status_.empty(); }

@@ -42,8 +42,6 @@ enum class ErrorCode : int {
 // Stores properties of a single lint error.
 class LintError {
  public:
-  LintError(const LintError &result);
-
   LintError(ErrorCode type, absl::string_view filename, int line, int column,
             absl::string_view message)
       : type_(type),
@@ -52,8 +50,11 @@ class LintError {
         column_(column),
         message_(message) {}
 
+  // Returns the raw form of error message, (without position information).
   absl::string_view GetErrorMessage();
 
+  // Returns the position where the error occured,
+  // in a pair with <line, column> format.
   std::pair<int, int> GetPosition() { return std::make_pair(line_, column_); }
 
   // Constructs a text message with code position info.
@@ -63,7 +64,8 @@ class LintError {
   // and status messages of failed checks.
   void PrintError();
 
-  int getLineNumber() const { return line_; }
+  // Returns the line number where the error occured.
+  int GetLineNumber() const { return line_; }
 
  private:
   // Holds type of the lint error. Type of an error is a number
@@ -92,7 +94,8 @@ class LinterResult {
  public:
   LinterResult()
       : errors_(std::vector<LintError>()),
-        status_(std::vector<absl::Status>()) {}
+        status_(std::vector<absl::Status>()) {
+  }
 
   LinterResult(const LinterResult &result);
 
@@ -101,7 +104,6 @@ class LinterResult {
   // This function adds a new lint error that occured in 'sql' in
   // location 'character_location', and 'type' refers to
   // the type of linter check that is failed.
-
   absl::Status Add(ErrorCode type, absl::string_view filename,
                    absl::string_view sql, int character_location,
                    absl::string_view message);
@@ -113,7 +115,7 @@ class LinterResult {
 
   // This function adds all errors in 'result' to this
   // It basicly combines two result.
-  void Add(const LinterResult &result);
+  void Add(LinterResult result);
 
   // Returns if any lint error occured.
   bool ok();
@@ -121,9 +123,14 @@ class LinterResult {
   // Clears all errors.
   void clear();
 
-  std::vector<LintError> GetErrors() const { return errors_; }
-  std::vector<absl::Status> GetStatus() const { return status_; }
+  // Returns all Lint Errors that are detected.
+  std::vector<LintError> GetErrors() { return errors_; }
 
+  // Returns all Status Errors that are occured.
+  std::vector<absl::Status> GetStatus() { return status_; }
+
+  // Output the result in a user-readable format. This function
+  // will be used to inform user about lint errors in their sql file.
   void PrintResult();
 
  private:
