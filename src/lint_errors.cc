@@ -83,8 +83,7 @@ void LinterResult::Add(ErrorCode type, absl::string_view sql,
 }
 
 void LinterResult::Add(LinterResult result) {
-  for (LintError error : result.GetErrors())
-    errors_.push_back(error);
+  for (LintError error : result.GetErrors()) errors_.push_back(error);
   for (absl::Status status : result.GetStatus()) status_.push_back(status);
 }
 
