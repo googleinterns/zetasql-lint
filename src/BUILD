@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 
 licenses(["notice"])  # Apache v2.0
 
@@ -31,7 +31,43 @@ cc_library(
         "-Wno-sign-compare",
         "-Wno-switch",
     ],
+    deps = [
+        ":lint_errors",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
+    ],
+)
+
+cc_library(
+    name = "lint_errors",
+    srcs = [
+        "lint_errors.cc",
+    ],
+    hdrs = [
+        "lint_errors.h",
+    ],
+    copts = [
+        "-Wno-return-type",
+        "-Wno-sign-compare",
+        "-Wno-switch",
+    ],
     deps = ["@com_google_zetasql//zetasql/public:parse_helpers"],
+)
+
+cc_binary(
+    name = "execute_linter",
+    srcs = [
+        "execute_linter.cc",
+    ],
+    copts = [
+        "-Wno-return-type",
+        "-Wno-sign-compare",
+        "-Wno-switch",
+    ],
+    deps = [
+        ":lint_errors",
+        ":linter",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
+    ],
 )
 
 cc_test(
@@ -39,7 +75,9 @@ cc_test(
     size = "small",
     srcs = ["linter_test.cc"],
     deps = [
+        ":lint_errors",
         ":linter",
         "@com_google_googletest//:gtest_main",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
 )

@@ -18,10 +18,12 @@
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "src/lint_errors.h"
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
 #include "zetasql/base/statusor.h"
@@ -37,7 +39,7 @@
 namespace zetasql::linter {
 
 // This will eventually be erased.
-absl::Status PrintASTTree(absl::string_view sql) {
+LinterResult PrintASTTree(absl::string_view sql) {
   absl::Status return_status;
   std::unique_ptr<ParserOutput> output;
 
@@ -48,7 +50,7 @@ absl::Status PrintASTTree(absl::string_view sql) {
     return_status = ParseNextScriptStatement(&location, ParserOptions(),
                                              &output, &is_the_end);
 
-    std::cout << "Status for sql#" << ++cnt << ": \"" << sql
+    std::cout << "Status for sql#" << ++cnt << " : \"" << sql
               << "\" = " << return_status.ToString() << std::endl;
 
     if (return_status.ok()) {
@@ -57,13 +59,15 @@ absl::Status PrintASTTree(absl::string_view sql) {
       break;
     }
   }
-  return return_status;
+  return LinterResult(return_status);
 }
 
-absl::Status CheckLineLength(absl::string_view sql, int line_limit,
+LinterResult CheckLineLength(absl::string_view sql, int line_limit,
                              const char delimeter) {
   int lineSize = 0;
   int line_number = 1;
+  int last_added = 0;
+  LinterResult result;
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
     if (sql[i] == delimeter) {
       lineSize = 0;
@@ -71,67 +75,86 @@ absl::Status CheckLineLength(absl::string_view sql, int line_limit,
     } else {
       ++lineSize;
     }
-    if (lineSize > line_limit) {
-      // TODO(orhanuysal): add proper error handling.
-      return absl::Status(
-          absl::StatusCode::kFailedPrecondition,
-          absl::StrCat("Lines should be <= ", std::to_string(line_limit),
-                       " characters long [", std::to_string(line_number),
-                       ",1]"));
+
+    if (lineSize > line_limit && line_number > last_added) {
+      last_added = line_number;
+      result.Add(
+          ErrorCode::kLineLimit, sql, i,
+          absl::StrCat("Lines should be <= ", line_limit, " characters long"));
     }
   }
-  return absl::OkStatus();
+  return result;
 }
 
-absl::Status CheckParserSucceeds(absl::string_view sql) {
+LinterResult CheckParserSucceeds(absl::string_view sql) {
   std::unique_ptr<ParserOutput> output;
 
   ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
 
   bool is_the_end = false;
+  int byte_position = 1;
+  LinterResult result;
   while (!is_the_end) {
-    ZETASQL_RETURN_IF_ERROR(ParseNextScriptStatement(&location, ParserOptions(),
-                                                     &output, &is_the_end));
+    byte_position = location.byte_position();
+    absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
+                                                   &output, &is_the_end);
+    if (!status.ok()) {
+      // TODO(orhanuysal): Implement a token parser to seperate statements
+      // currently, when parser fails, it is unable to determine
+      // the end of the statement.
+      result.Add(ErrorCode::kParseFailed, sql, byte_position, "Parser Failed");
+      break;
+    }
   }
-  return absl::OkStatus();
+  return result;
 }
 
-absl::Status CheckSemicolon(absl::string_view sql) {
+LinterResult CheckSemicolon(absl::string_view sql) {
+  LinterResult result;
   std::unique_ptr<ParserOutput> output;
 
   ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
   bool is_the_end = false;
 
   while (!is_the_end) {
-    ZETASQL_RETURN_IF_ERROR(ParseNextScriptStatement(&location, ParserOptions(),
-                                                     &output, &is_the_end));
-
+    absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
+                                                   &output, &is_the_end);
+    if (!status.ok()) return LinterResult(status);
     int location =
         output->statement()->GetParseLocationRange().end().GetByteOffset();
 
     if (location >= sql.size() || sql[location] != ';') {
-      return absl::Status(absl::StatusCode::kFailedPrecondition,
-                          "Each statemnt should end with a consequtive"
-                          "semicolon ';'");
+      result.Add(ErrorCode::kSemicolon, sql, location,
+                 "Each statemnt should end with a consequtive"
+                 "semicolon ';'");
     }
   }
-  return absl::OkStatus();
+  return result;
 }
 
-bool AllUpperCase(const absl::string_view &sql,
-                  const ParseLocationRange &range) {
+bool ConsistentUppercaseLowercase(const absl::string_view &sql,
+                                  const ParseLocationRange &range) {
+  bool uppercase = false;
+  bool lowercase = false;
   for (int i = range.start().GetByteOffset(); i < range.end().GetByteOffset();
        ++i) {
-    if ('a' <= sql[i] && sql[i] <= 'z') return false;
+    if ('a' <= sql[i] && sql[i] <= 'z') lowercase = true;
+    if ('A' <= sql[i] && sql[i] <= 'Z') uppercase = true;
   }
-  return true;
+  // There shouldn't be any case any Keyword
+  // contains both uppercase and lowercase characters
+  return !(lowercase && uppercase);
 }
 
-absl::Status CheckUppercaseKeywords(absl::string_view sql) {
+LinterResult CheckUppercaseKeywords(absl::string_view sql) {
   ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
   std::vector<ParseToken> parse_tokens;
-  absl::Status tokenizer_status =
+  LinterResult result;
+
+  absl::Status status =
       GetParseTokens(ParseTokenOptions(), &location, &parse_tokens);
+
+  if (!status.ok()) return LinterResult(status);
 
   // Keyword definition in tokenizer is very wide,
   // it include some special characters like ';', '*', etc.
@@ -139,58 +162,60 @@ absl::Status CheckUppercaseKeywords(absl::string_view sql) {
   // outside of english lowercase letters.
   for (auto &token : parse_tokens) {
     if (token.kind() == ParseToken::KEYWORD) {
-      if (!AllUpperCase(sql, token.GetLocationRange())) {
-        return absl::Status(
-            absl::StatusCode::kFailedPrecondition,
-            absl::StrCat("All keywords should be Uppercase, In character ",
-                         std::to_string(
-                             token.GetLocationRange().start().GetByteOffset()),
-                         " string should be: ", token.GetSQL()));
+      if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange())) {
+        result.Add(ErrorCode::kUppercase, sql,
+                   token.GetLocationRange().start().GetByteOffset(),
+                   "All keywords should be Uppercase");
       }
     }
   }
-
-  return absl::OkStatus();
+  return result;
 }
 
-absl::Status CheckCommentType(absl::string_view sql, char delimeter) {
+LinterResult CheckCommentType(absl::string_view sql, char delimeter) {
+  LinterResult result;
   bool dash_comment = false;
   bool slash_comment = false;
   bool hash_comment = false;
   bool inside_string = false;
+  absl::string_view first_type = "";
 
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
     if (sql[i] == '\'' || sql[i] == '"') inside_string = !inside_string;
 
     if (inside_string) continue;
+    absl::string_view type = "";
+    if (i > 0 && sql[i - 1] == '-' && sql[i] == '-') type = "--";
+    if (i > 0 && sql[i - 1] == '/' && sql[i] == '/') type = "//";
+    if (sql[i] == '#') type = "#";
 
-    if (i > 0 && sql[i - 1] == '-' && sql[i] == '-') {
-      dash_comment = true;
-      // ignore the line.
+    if (type != "") {
+      if (type == "--") {
+        dash_comment = true;
+      } else if (type == "//") {
+        slash_comment = true;
+      } else {
+        hash_comment = true;
+      }
+
+      if (dash_comment + slash_comment + hash_comment == 1)
+        first_type = type;
+      else if (type != first_type)
+        result.Add(
+            ErrorCode::kCommentStyle, sql, i,
+            absl::StrCat("One line comments should be consistent, expected: ",
+                         first_type, ", found: ", type));
+
+      // Ignore the line.
       while (i < static_cast<int>(sql.size()) && sql[i] != delimeter) {
         ++i;
       }
+      continue;
     }
 
-    if (i > 0 && sql[i - 1] == '/' && sql[i] == '/') {
-      slash_comment = true;
-      // ignore the line.
-      while (i < static_cast<int>(sql.size()) && sql[i] != delimeter) {
-        ++i;
-      }
-    }
-
-    if (sql[i] == '#') {
-      hash_comment = true;
-      // ignore the line.
-      while (i < static_cast<int>(sql.size()) && sql[i] != delimeter) {
-        ++i;
-      }
-    }
-
-    // ignore multiline comments.
+    // Ignore multiline comments.
     if (i > 0 && sql[i - 1] == '/' && sql[i] == '*') {
-      // it will start checking after '/*' and after the iteration
+      // It will start checking after '/*' and after the iteration
       // finished, the pointer 'i' will be just after '*/' (incrementation
       // from the for statement is included).
       i += 2;
@@ -201,94 +226,84 @@ absl::Status CheckCommentType(absl::string_view sql, char delimeter) {
     }
   }
 
-  if (dash_comment + slash_comment + hash_comment > 1)
-    return absl::Status(absl::StatusCode::kFailedPrecondition,
-                        "either '//' or '--' should be used to "
-                        "specify a comment");
-  return absl::OkStatus();
+  return result;
 }
 
-absl::Status ASTNodeRule::ApplyTo(absl::string_view sql) {
+LinterResult ASTNodeRule::ApplyTo(absl::string_view sql) {
   RuleVisitor visitor(rule_, sql);
 
   std::unique_ptr<ParserOutput> output;
   ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
+  absl::Status status;
+  LinterResult result;
 
   bool is_the_end = false;
   while (!is_the_end) {
-    ZETASQL_RETURN_IF_ERROR(ParseNextScriptStatement(&location, ParserOptions(),
-                                                     &output, &is_the_end));
-    ZETASQL_RETURN_IF_ERROR(
-        output->statement()->TraverseNonRecursive(&visitor));
+    status = ParseNextScriptStatement(&location, ParserOptions(), &output,
+                                      &is_the_end);
+    if (!status.ok()) return LinterResult(status);
+
+    status = output->statement()->TraverseNonRecursive(&visitor);
+    if (!status.ok()) return LinterResult(status);
   }
 
-  ZETASQL_RETURN_IF_ERROR(visitor.GetResult());
-
-  return absl::OkStatus();
+  return visitor.GetResult();
 }
 
-absl::Status CheckAliasKeyword(absl::string_view sql) {
-  return ASTNodeRule(
-             [](const ASTNode *node, absl::string_view sql) -> absl::Status {
-               if (node->node_kind() == AST_ALIAS) {
-                 int position =
-                     node->GetParseLocationRange().start().GetByteOffset();
-                 if (sql[position] != 'A' || sql[position + 1] != 'S') {
-                   return absl::Status(
-                       absl::StatusCode::kFailedPrecondition,
-                       absl::StrCat("Always use AS keyword for referencing "
-                                    "aliases, ",
-                                    "In position: ", std::to_string(position)));
-                 }
-               }
-               return absl::OkStatus();
-             })
+zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(
+    const ASTNode *node) {
+  result_.Add(rule_(node, sql_));
+  return VisitResult::VisitChildren(node);
+}
+
+LinterResult CheckAliasKeyword(absl::string_view sql) {
+  return ASTNodeRule([](const ASTNode *node,
+                        const absl::string_view &sql) -> LinterResult {
+           LinterResult result;
+           if (node->node_kind() == AST_ALIAS) {
+             int position =
+                 node->GetParseLocationRange().start().GetByteOffset();
+             if (sql[position] != 'A' || sql[position + 1] != 'S') {
+               result.Add(ErrorCode::kAlias, sql, position,
+                          "Always use AS keyword before aliases");
+             }
+           }
+           return result;
+         })
       .ApplyTo(sql);
 }
 
-std::string ConstructPositionMessage(std::pair<int, int> pos) {
-  return absl::StrCat("line ", pos.first, " position ", pos.second);
-}
-
-absl::Status ConstructErrorWithPosition(absl::string_view sql, int index,
-                                        absl::string_view error_msg) {
-  ParseLocationPoint lp = ParseLocationPoint::FromByteOffset(index);
-  ParseLocationTranslator lt(sql);
-  std::pair<int, int> error_pos;
-  ZETASQL_ASSIGN_OR_RETURN(error_pos, lt.GetLineAndColumnAfterTabExpansion(lp));
-  return absl::Status(
-      absl::StatusCode::kFailedPrecondition,
-      absl::StrCat(error_msg, " in ", ConstructPositionMessage(error_pos)));
-}
-
-absl::Status CheckTabCharactersUniform(absl::string_view sql,
+LinterResult CheckTabCharactersUniform(absl::string_view sql,
                                        const char allowed_indent,
                                        const char line_delimeter) {
   bool is_indent = true;
   const char kSpace = ' ', kTab = '\t';
+  LinterResult result;
 
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
     if (sql[i] == line_delimeter) {
       is_indent = true;
     } else if (is_indent && sql[i] != allowed_indent) {
       if (sql[i] == kTab || sql[i] == kSpace) {
-        return ConstructErrorWithPosition(
-            sql, i,
-            absl::StrCat("Inconsistent use of indentation symbols: ",
-                         "expected \"", std::string(1, allowed_indent), "\""));
+        result.Add(
+            ErrorCode::kUniformTab, sql, i,
+            absl::StrCat("Inconsistent use of indentation symbols, "
+                         "expected: ",
+                         (sql[i] == kTab ? "whitespace" : "tab character")));
       }
       is_indent = false;
     }
   }
 
-  return absl::OkStatus();
+  return result;
 }
 
-absl::Status CheckNoTabsBesidesIndentations(absl::string_view sql,
+LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
                                             const char line_delimeter) {
   const char kSpace = ' ', kTab = '\t';
 
   bool is_indent = true;
+  LinterResult result;
 
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
     if (sql[i] == line_delimeter) {
@@ -296,24 +311,12 @@ absl::Status CheckNoTabsBesidesIndentations(absl::string_view sql,
     } else if (sql[i] != kSpace && sql[i] != kTab) {
       is_indent = false;
     } else if (sql[i] == kTab && !is_indent) {
-      return ConstructErrorWithPosition(
-          sql, i,
-          absl::string_view("Tab not in the indentation, expected space"));
+      result.Add(ErrorCode::kNoIndentTab, sql, i,
+                 "Tab is not in the indentation, expected space");
     }
   }
 
-  return absl::OkStatus();
-}
-
-zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(
-    const ASTNode *node) {
-  absl::Status rule_result = rule_(node, sql_);
-  if (!rule_result.ok()) {
-    // There may be multiple rule failures for now
-    // only the last failure will be shown.
-    result_ = rule_result;
-  }
-  return VisitResult::VisitChildren(node);
+  return result;
 }
 
 }  // namespace zetasql::linter

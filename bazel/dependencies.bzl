@@ -7,8 +7,8 @@ def zetasql_repo():
 
             #From Zetasql repository 29/06/2020
             urls = [
-                "https://github.com/google/zetasql/archive/3e5d33d707919df42d1083665113ef05dd78ffff.tar.gz",
+                "https://github.com/google/zetasql/archive/1aefaa7c62fc7a50def879bb7c4225ec6974b7ef.tar.gz",
             ],
-            sha256 = "52ccd7f2e4f5865a1d664b2bf06e6dee948a643347ed23b56249185649c7200b",
-            strip_prefix = "zetasql-3e5d33d707919df42d1083665113ef05dd78ffff",
+            sha256 = "86f9b4f71ecf6f2ca6a7153f349c577ac1eb2f8bd8df2ce680a975ebe5ba1eda",
+            strip_prefix = "zetasql-1aefaa7c62fc7a50def879bb7c4225ec6974b7ef",
         )
