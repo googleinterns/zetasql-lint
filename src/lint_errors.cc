@@ -32,7 +32,7 @@
 
 namespace zetasql::linter {
 
-absl::string_view LintError::GetErrorMessage() { return message_; }
+std::string LintError::GetErrorMessage() { return message_; }
 
 std::string LintError::ConstructPositionMessage() {
   return absl::StrCat("In line ", line_, ", column ", column_, ": ");
@@ -60,7 +60,6 @@ void LinterResult::PrintResult() {
   std::cout << "Linter results are printed" << std::endl;
 }
 
-LinterResult::LinterResult(const LinterResult &result) { Add(result); }
 LinterResult::LinterResult(const absl::Status &status) {
   if (!status.ok()) status_.push_back(status);
 }

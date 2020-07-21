@@ -59,11 +59,9 @@ TEST(LinterTest, StatementValidityCheck) {
   EXPECT_FALSE(CheckParserSucceeds("SELET A FROM B\nSELECT C FROM D").ok());
 
   EXPECT_FALSE(CheckParserSucceeds("SELECT 1; SELECT 2 3 4;").ok());
-  std::cout << "WHYYY???222?? \n\n\n";
 }
 
 TEST(LinterTest, SemicolonCheck) {
-  std::cout << "WHYYY????? \n\n\n";
   EXPECT_TRUE(CheckSemicolon("SELECT 3+5;\nSELECT 4+6;").ok());
   EXPECT_TRUE(CheckSemicolon("SELECT 3+5;   \n   SELECT 4+6;").ok());
   EXPECT_FALSE(CheckSemicolon("SELECT 3+5\nSELECT 4+6;").ok());

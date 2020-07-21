@@ -43,7 +43,7 @@ enum class ErrorCode : int {
 class LintError {
  public:
   LintError(ErrorCode type, absl::string_view filename, int line, int column,
-            std::string message)
+            absl::string_view message)
       : type_(type),
         filename_(filename),
         line_(line),
@@ -51,7 +51,7 @@ class LintError {
         message_(message) {}
 
   // Returns the raw form of error message, (without position information).
-  absl::string_view GetErrorMessage();
+  std::string GetErrorMessage();
 
   // Returns the position where the error occured,
   // in a pair with <line, column> format.
@@ -95,8 +95,6 @@ class LinterResult {
   LinterResult()
       : errors_(std::vector<LintError>()),
         status_(std::vector<absl::Status>()) {}
-
-  LinterResult(const LinterResult &result);
 
   explicit LinterResult(const absl::Status &status);
 
