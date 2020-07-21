@@ -83,7 +83,6 @@ LinterResult CheckLineLength(absl::string_view sql, int line_limit,
           absl::StrCat("Lines should be <= ", line_limit, " characters long"));
     }
   }
-  result.PrintResult();
   return result;
 }
 
@@ -266,7 +265,7 @@ LinterResult CheckAliasKeyword(absl::string_view sql) {
                  node->GetParseLocationRange().start().GetByteOffset();
              if (sql[position] != 'A' || sql[position + 1] != 'S') {
                result.Add(ErrorCode::kAlias, sql, position,
-                          "Always use AS keyword before aliases ");
+                          "Always use AS keyword before aliases");
              }
            }
            return result;
@@ -313,7 +312,7 @@ LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
       is_indent = false;
     } else if (sql[i] == kTab && !is_indent) {
       result.Add(ErrorCode::kNoIndentTab, sql, i,
-                 "Tab not in the indentation, expected space");
+                 "Tab is not in the indentation, expected space");
     }
   }
 

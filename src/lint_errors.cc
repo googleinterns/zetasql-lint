@@ -67,7 +67,7 @@ LinterResult::LinterResult(const absl::Status &status) {
 
 absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
                                absl::string_view sql, int character_location,
-                               absl::string_view message) {
+                               std::string message) {
   ParseLocationPoint lp =
       ParseLocationPoint::FromByteOffset(character_location);
   ParseLocationTranslator lt(sql);
@@ -79,15 +79,14 @@ absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
 }
 
 void LinterResult::Add(ErrorCode type, absl::string_view sql,
-                       int character_location, absl::string_view message) {
+                       int character_location, std::string message) {
   Add(type, "", sql, character_location, message);
 }
 
 void LinterResult::Add(LinterResult result) {
   for (LintError error : result.GetErrors())
-    errors_.push_back(error), error.PrintError();
+    errors_.push_back(error);
   for (absl::Status status : result.GetStatus()) status_.push_back(status);
-  PrintResult();
 }
 
 bool LinterResult::ok() { return errors_.empty() && status_.empty(); }

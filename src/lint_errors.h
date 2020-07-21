@@ -43,7 +43,7 @@ enum class ErrorCode : int {
 class LintError {
  public:
   LintError(ErrorCode type, absl::string_view filename, int line, int column,
-            absl::string_view message)
+            std::string message)
       : type_(type),
         filename_(filename),
         line_(line),
@@ -82,7 +82,7 @@ class LintError {
   int column_;
 
   // Error message that will be printed.
-  absl::string_view message_ = "";
+  std::string message_ = "";
 };
 
 // It is the result of a linter run.
@@ -105,12 +105,12 @@ class LinterResult {
   // the type of linter check that is failed.
   absl::Status Add(ErrorCode type, absl::string_view filename,
                    absl::string_view sql, int character_location,
-                   absl::string_view message);
+                   std::string message);
 
   // Basicly does the same with above function without a
   // specific filename.
   void Add(ErrorCode type, absl::string_view sql, int character_location,
-           absl::string_view message);
+           std::string message);
 
   // This function adds all errors in 'result' to this
   // It basicly combines two result.
