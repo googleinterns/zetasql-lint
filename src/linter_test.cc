@@ -136,7 +136,8 @@ TEST(LinterTest, TabCharactersUniformCheck) {
   LinterOptions option_tab;
   option_tab.SetAllowedIndent('\t');
   EXPECT_TRUE(
-      CheckTabCharactersUniform("\tSELECT 5;\n\t\tSELECT 6;", option).ok());
+      CheckTabCharactersUniform("\tSELECT 5;\n\t\tSELECT 6;", option_tab)
+          .ok());
   EXPECT_TRUE(
       CheckTabCharactersUniform("SELECT 5;\n SELECT\t6;\t", option_space).ok());
 
@@ -150,7 +151,7 @@ TEST(LinterTest, TabCharactersUniformCheck) {
           .GetErrors()
           .back()
           .GetPosition() == std::make_pair(2, 1));
-  EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n  SELECT 6;", option)
+  EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n  SELECT 6;", option_tab)
                   .GetErrors()
                   .back()
                   .GetPosition() == std::make_pair(2, 1));
