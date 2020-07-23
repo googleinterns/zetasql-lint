@@ -64,7 +64,8 @@ LinterResult PrintASTTree(absl::string_view sql) {
   return LinterResult(return_status);
 }
 
-LinterResult CheckLineLength(absl::string_view sql, LinterOptions option) {
+LinterResult CheckLineLength(absl::string_view sql,
+                             const LinterOptions &option) {
   int lineSize = 0;
   int line_number = 1;
   int last_added = 0;
@@ -79,7 +80,7 @@ LinterResult CheckLineLength(absl::string_view sql, LinterOptions option) {
 
     if (lineSize > option.LineLimit() && line_number > last_added) {
       last_added = line_number;
-      if (option.IsActive(i))
+      if (option.IsActive(ErrorCode::kLineLimit, i))
         result.Add(ErrorCode::kLineLimit, sql, i,
                    absl::StrCat("Lines should be <= ", option.LineLimit(),
                                 " characters long"));
@@ -88,7 +89,8 @@ LinterResult CheckLineLength(absl::string_view sql, LinterOptions option) {
   return result;
 }
 
-LinterResult CheckParserSucceeds(absl::string_view sql, LinterOptions option) {
+LinterResult CheckParserSucceeds(absl::string_view sql,
+                                 const LinterOptions &option) {
   std::unique_ptr<ParserOutput> output;
 
   ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
@@ -104,7 +106,7 @@ LinterResult CheckParserSucceeds(absl::string_view sql, LinterOptions option) {
       // TODO(orhanuysal): Implement a token parser to seperate statements
       // currently, when parser fails, it is unable to determine
       // the end of the statement.
-      if (option.IsActive(byte_position))
+      if (option.IsActive(ErrorCode::kParseFailed, byte_position))
         result.Add(ErrorCode::kParseFailed, sql, byte_position,
                    "Parser Failed");
       break;
@@ -113,7 +115,8 @@ LinterResult CheckParserSucceeds(absl::string_view sql, LinterOptions option) {
   return result;
 }
 
-LinterResult CheckSemicolon(absl::string_view sql, LinterOptions option) {
+LinterResult CheckSemicolon(absl::string_view sql,
+                            const LinterOptions &option) {
   LinterResult result;
   std::unique_ptr<ParserOutput> output;
 
@@ -128,7 +131,7 @@ LinterResult CheckSemicolon(absl::string_view sql, LinterOptions option) {
         output->statement()->GetParseLocationRange().end().GetByteOffset();
 
     if (location >= sql.size() || sql[location] != ';') {
-      if (option.IsActive(location))
+      if (option.IsActive(ErrorCode::kSemicolon, location))
         result.Add(ErrorCode::kSemicolon, sql, location,
                    "Each statemnt should end with a consequtive"
                    "semicolon ';'");
@@ -152,7 +155,7 @@ bool ConsistentUppercaseLowercase(const absl::string_view &sql,
 }
 
 LinterResult CheckUppercaseKeywords(absl::string_view sql,
-                                    LinterOptions option) {
+                                    const LinterOptions &option) {
   ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
   std::vector<ParseToken> parse_tokens;
   LinterResult result;
@@ -170,7 +173,7 @@ LinterResult CheckUppercaseKeywords(absl::string_view sql,
     if (token.kind() == ParseToken::KEYWORD) {
       if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange())) {
         int position = token.GetLocationRange().start().GetByteOffset();
-        if (option.IsActive(position))
+        if (option.IsActive(ErrorCode::kLetterCase, position))
           result.Add(ErrorCode::kLetterCase, sql, position,
                      "All keywords should be Uppercase");
       }
@@ -179,7 +182,8 @@ LinterResult CheckUppercaseKeywords(absl::string_view sql,
   return result;
 }
 
-LinterResult CheckCommentType(absl::string_view sql, LinterOptions option) {
+LinterResult CheckCommentType(absl::string_view sql,
+                              const LinterOptions &option) {
   LinterResult result;
   bool dash_comment = false;
   bool slash_comment = false;
@@ -217,7 +221,8 @@ LinterResult CheckCommentType(absl::string_view sql, LinterOptions option) {
 
       if (dash_comment + slash_comment + hash_comment == 1)
         first_type = type;
-      else if (type != first_type && option.IsActive(i))
+      else if (type != first_type &&
+               option.IsActive(ErrorCode::kCommentStyle, i))
         result.Add(
             ErrorCode::kCommentStyle, sql, i,
             absl::StrCat("One line comments should be consistent, expected: ",
@@ -247,7 +252,8 @@ LinterResult CheckCommentType(absl::string_view sql, LinterOptions option) {
   return result;
 }
 
-LinterResult ASTNodeRule::ApplyTo(absl::string_view sql, LinterOptions option) {
+LinterResult ASTNodeRule::ApplyTo(absl::string_view sql,
+                                  const LinterOptions &option) {
   RuleVisitor visitor(rule_, sql, option);
 
   std::unique_ptr<ParserOutput> output;
@@ -274,7 +280,8 @@ zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(
   return VisitResult::VisitChildren(node);
 }
 
-LinterResult CheckAliasKeyword(absl::string_view sql, LinterOptions option) {
+LinterResult CheckAliasKeyword(absl::string_view sql,
+                               const LinterOptions &option) {
   return ASTNodeRule([](const ASTNode *node, const absl::string_view &sql,
                         const LinterOptions &option) -> LinterResult {
            LinterResult result;
@@ -282,7 +289,7 @@ LinterResult CheckAliasKeyword(absl::string_view sql, LinterOptions option) {
              int position =
                  node->GetParseLocationRange().start().GetByteOffset();
              if (sql[position] != 'A' || sql[position + 1] != 'S') {
-               if (option.IsActive(position))
+               if (option.IsActive(ErrorCode::kAlias, position))
                  result.Add(ErrorCode::kAlias, sql, position,
                             "Always use AS keyword before aliases");
              }
@@ -293,7 +300,7 @@ LinterResult CheckAliasKeyword(absl::string_view sql, LinterOptions option) {
 }
 
 LinterResult CheckTabCharactersUniform(absl::string_view sql,
-                                       LinterOptions option) {
+                                       const LinterOptions &option) {
   bool is_indent = true;
   const char kSpace = ' ', kTab = '\t';
   LinterResult result;
@@ -303,7 +310,7 @@ LinterResult CheckTabCharactersUniform(absl::string_view sql,
       is_indent = true;
     } else if (is_indent && sql[i] != option.AllowedIndent()) {
       if (sql[i] == kTab || sql[i] == kSpace) {
-        if (option.IsActive(i))
+        if (option.IsActive(ErrorCode::kUniformIndent, i))
           result.Add(
               ErrorCode::kUniformIndent, sql, i,
               absl::StrCat("Inconsistent use of indentation symbols, "
@@ -318,7 +325,7 @@ LinterResult CheckTabCharactersUniform(absl::string_view sql,
 }
 
 LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
-                                            LinterOptions option) {
+                                            const LinterOptions &option) {
   const char kSpace = ' ', kTab = '\t';
 
   bool is_indent = true;
@@ -330,7 +337,7 @@ LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
     } else if (sql[i] != kSpace && sql[i] != kTab) {
       is_indent = false;
     } else if (sql[i] == kTab && !is_indent) {
-      if (option.IsActive(i))
+      if (option.IsActive(ErrorCode::kNotIndentTab, i))
         result.Add(ErrorCode::kNotIndentTab, sql, i,
                    "Tab is not in the indentation, expected space");
     }

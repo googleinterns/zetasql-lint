@@ -22,32 +22,36 @@
 #include <utility>
 #include <vector>
 
+#include "src/lint_errors.h"
+
 namespace zetasql::linter {
 
 class LinterOptions {
+  class CheckOptions;
+
  public:
   // Returns if the linter check should be active
   // in <position>.
-  bool IsActive(int position) const;
+  bool IsActive(ErrorCode code, int position) const;
 
   // Disables linter check after <position>.
   // Enabling/Disabling positions should always come in
   // increasing order.
-  void Disable(int position);
+  void Disable(ErrorCode code, int position);
 
   // Enables linter check after <position>.
   // Enabling/Disabling positions should always come in
   // increasing order.
-  void Enable(int position);
+  void Enable(ErrorCode code, int position);
 
   // Getter for tab_size_.
-  int TabSize() { return tab_size_; }
+  int TabSize() const { return tab_size_; }
 
   // Setter for tab_size_.
   int SetTabSize(char tab_size) { tab_size_ = tab_size; }
 
   // Getter for line_delimeter_.
-  int LineDelimeter() { return line_delimeter_; }
+  int LineDelimeter() const { return line_delimeter_; }
 
   // Setter for line_delimeter_.
   void SetLineDelimeter(int line_delimeter) {
@@ -55,13 +59,13 @@ class LinterOptions {
   }
 
   // Getter for line_limit_.
-  int LineLimit() { return line_limit_; }
+  int LineLimit() const { return line_limit_; }
 
   // Setter for line_limit_.
   void SetLineLimit(int line_limit) { line_limit_ = line_limit; }
 
   // Getter for allowed_indent_.
-  char AllowedIndent() { return allowed_indent_; }
+  char AllowedIndent() const { return allowed_indent_; }
 
   // Setter for allowed_indent_.
   void SetAllowedIndent(char allowed_indent) {
@@ -82,15 +86,38 @@ class LinterOptions {
   // '\t' or ' '.
   char allowed_indent_ = ' ';
 
-  // Stores if the linter check is active from the start.
-  bool active_start_ = true;
-
   // Whenever a lint check fails status message occurs. This variable
   // determines if status messages should be shown to the user.
   bool show_status_ = false;
 
-  // Stores switching points between enabling and disabling.
-  std::vector<int> switchs_ = std::vector<int>();
+  // For each ErrorCode that correspond to a check, it stores
+  // options for that check.
+  std::map<ErrorCode, CheckOptions> option_map_;
+
+  // This class is options specified for a check.
+  class CheckOptions {
+   public:
+    // Returns if the linter check should be active
+    // in <position>.
+    bool IsActive(int position) const;
+
+    // Disables linter check after <position>.
+    // Enabling/Disabling positions should always come in
+    // increasing order.
+    void Disable(int position);
+
+    // Enables linter check after <position>.
+    // Enabling/Disabling positions should always come in
+    // increasing order.
+    void Enable(int position);
+
+   private:
+    // Stores switching points between enabling and disabling.
+    std::vector<int> switchs_ = std::vector<int>();
+
+    // Stores if the linter check is active from the start.
+    bool active_start_ = true;
+  };
 };
 
 }  // namespace zetasql::linter

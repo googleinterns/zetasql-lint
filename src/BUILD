@@ -14,7 +14,8 @@
 # limitations under the License.
 #
 
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_proto_library", "cc_test")
 
 licenses(["notice"])  # Apache v2.0
 
@@ -52,7 +53,6 @@ cc_library(
         "-Wno-switch",
     ],
     deps = [
-        ":linter_options",
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
 )
@@ -64,6 +64,9 @@ cc_library(
     ],
     hdrs = [
         "linter_options.h",
+    ],
+    deps = [
+        ":lint_errors",
     ],
 )
 
@@ -95,4 +98,19 @@ cc_test(
         "@com_google_googletest//:gtest_main",
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
+)
+
+cc_library(
+    name = "config",
+    deps = [":config_cc_proto"],
+)
+
+cc_proto_library(
+    name = "config_cc_proto",
+    deps = [":config_proto"],
+)
+
+proto_library(
+    name = "config_proto",
+    srcs = ["config.proto"],
 )

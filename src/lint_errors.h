@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "src/linter_options.h"
 #include "zetasql/base/status.h"
 
 namespace zetasql::linter {

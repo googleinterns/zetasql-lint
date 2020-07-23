@@ -33,12 +33,58 @@ namespace zetasql::linter {
 
 namespace {
 
-// This function will parse "NOLINT"(<CheckName>) syntax and adjust enability
-// options for each check. If NOLINT usage errors occur, it counts as a lint
+// This function will parse "NOLINT"(<CheckName>) syntax from
+// a single line of comment.
+// If NOLINT usage errors occur, it counts as a lint
 // error and it will be returned in a result.
-// This works similar to consistent comment type check.
-LinterResult ParseNoLintComments(absl::string_view sql, LinterOptions options,
-                                 std::map<ErrorCode, LinterOptions>* nolint) {
+LinterResult ParseNoLintSingleComment(absl::string_view line,
+                                      LinterOptions* options, int position) {
+  LinterResult result;
+  std::map<std::string, ErrorCode> error_map = GetErrorMap();
+  int i = 0;
+
+  // Skip spaces from the beginning.
+  while (i < static_cast<int>(line.size()) && line[i] == ' ') ++i;
+
+  // Found enabling or disabling type of comment.
+  if (line.substr(i, 6) == "NOLINT" || line.substr(i, 4) == "LINT") {
+    // Stores if it is "NOLINT" or "LINT"
+    bool is_it_disabling = (line.substr(i, 6) == "NOLINT");
+    while (i < static_cast<int>(line.size()) && line[i] != '(') ++i;
+    ++i;
+
+    std::string check_name = "";
+    while (i < static_cast<int>(line.size()) && line[i - 1] != ')') {
+      if (line[i] == ' ') continue;
+      if (line[i] == ',' || line[i] == ')') {
+        // The name inside of parantheses is stored in 'check_name'
+        // If it is not valid add error, otherwise enable/disable position
+        if (!error_map.count(check_name)) {
+          result.Add(
+              ErrorCode::kNoLint, line, position + i,
+              absl::StrCat("Unkown NOLINT error category: ", check_name));
+        } else {
+          const ErrorCode& code = error_map[check_name];
+          if (is_it_disabling)
+            options->Disable(code, position + i);
+          else
+            options->Enable(code, position + i);
+        }
+        check_name = "";
+      } else {
+        check_name += line[i];
+      }
+      ++i;
+    }
+  }
+  return result;
+}
+
+// This function will parse "NOLINT"(<CheckName>) syntax from a sql file.
+// If NOLINT usage errors occur, it counts as a lint
+// error and it will be returned in a result.
+LinterResult ParseNoLintComments(absl::string_view sql,
+                                 LinterOptions* options) {
   LinterResult result;
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
     if (sql[i] == '\'' || sql[i] == '"') {
@@ -67,51 +113,17 @@ LinterResult ParseNoLintComments(absl::string_view sql, LinterOptions options,
       }
     }
 
-    absl::string_view type = "";
-    if (i > 0 && sql[i - 1] == '-' && sql[i] == '-') type = "--";
-    if (i > 0 && sql[i - 1] == '/' && sql[i] == '/') type = "//";
-    if (sql[i] == '#') type = "#";
+    bool is_line_comment = false;
+    if (i > 0 && sql[i - 1] == '-' && sql[i] == '-') is_line_comment = true;
+    if (i > 0 && sql[i - 1] == '/' && sql[i] == '/') is_line_comment = true;
+    if (sql[i] == '#') is_line_comment = true;
 
-    if (type != "") {
-      ++i;
-      while (i < static_cast<int>(sql.size()) && sql[i] == ' ') ++i;
-
-      if (sql.substr(i, 6) == "NOLINT" || sql.substr(i, 4) == "LINT") {
-        bool disabler = (sql.substr(i, 6) == "NOLINT");
-        while (i < static_cast<int>(sql.size()) && sql[i] != '(' &&
-               sql[i] != options.LineDelimeter())
-          ++i;
-        ++i;
-        std::string s = "";
-        while (i < static_cast<int>(sql.size()) && sql[i - 1] != ')' &&
-               sql[i] != options.LineDelimeter()) {
-          if (sql[i] == ' ') continue;
-          if (sql[i] == ',' || sql[i] == ')') {
-            std::map<std::string, ErrorCode> error_map = GetErrorMap();
-            if (!error_map.count(s)) {
-              result.Add(ErrorCode::kNoLint, sql, i,
-                         absl::StrCat("Unkown NOLINT error category: ", s));
-            } else {
-              const ErrorCode& code = error_map[s];
-              if (!nolint->count(code)) (*nolint)[code] = options;
-
-              (*nolint)[code].IsActive(i + 1);
-              if (disabler)
-                (*nolint)[code].Disable(i);
-              else
-                (*nolint)[code].Enable(i);
-              (*nolint)[code].IsActive(i + 1);
-            }
-            s = "";
-          } else {
-            s += sql[i];
-          }
-          ++i;
-        }
-      }
-      while (i < static_cast<int>(sql.size()) &&
-             sql[i] != options.LineDelimeter())
-        ++i;
+    if (is_line_comment) {
+      std::string line = "";
+      while (i + 1 < static_cast<int>(sql.size()) &&
+             sql[i] != options->LineDelimeter())
+        line += sql[++i];
+      result.Add(ParseNoLintSingleComment(sql, options, i));
       continue;
     }
   }
@@ -127,35 +139,24 @@ LinterOptions GetOptionsFromConfig() {
 // TODO(orhanuysal): Move these classes to proper .h file
 // when a good file name is chosen.
 
-// It is an helper class for CheckList
-class CheckListObject {
- public:
-  CheckListObject(
-      std::function<LinterResult(absl::string_view, LinterOptions)> check,
-      ErrorCode code)
-      : check_(check), code_(code) {}
-  std::function<LinterResult(absl::string_view, LinterOptions)> GetCheck() {
-    return check_;
-  }
-  ErrorCode GetCode() { return code_; }
-
- private:
-  std::function<LinterResult(absl::string_view, LinterOptions)> check_;
-  ErrorCode code_;
-};
-
 // It is the general list of the linter checks. It can be used to
 // verify if a place is controlling all of the checks and not missing any.
 class CheckList {
  public:
-  std::vector<CheckListObject> GetList() { return list_; }
-  void Add(std::function<LinterResult(absl::string_view, LinterOptions)> check,
-           ErrorCode code) {
-    list_.push_back(CheckListObject(check, code));
+  std::vector<
+      std::function<LinterResult(absl::string_view, const LinterOptions&)>>
+  GetList() {
+    return list_;
+  }
+  void Add(std::function<LinterResult(absl::string_view, const LinterOptions&)>
+               check) {
+    list_.push_back(check);
   }
 
  private:
-  std::vector<CheckListObject> list_;
+  std::vector<
+      std::function<LinterResult(absl::string_view, const LinterOptions&)>>
+      list_;
 };
 
 // This function is the main function to get all the checks.
@@ -163,33 +164,26 @@ class CheckList {
 // the first place to update.
 CheckList GetAllChecks() {
   CheckList list;
-  list.Add(CheckLineLength, ErrorCode::kLineLimit);
-  list.Add(CheckParserSucceeds, ErrorCode::kParseFailed);
-  list.Add(CheckSemicolon, ErrorCode::kSemicolon);
-  list.Add(CheckUppercaseKeywords, ErrorCode::kLetterCase);
-  list.Add(CheckCommentType, ErrorCode::kCommentStyle);
-  list.Add(CheckAliasKeyword, ErrorCode::kAlias);
-  list.Add(CheckTabCharactersUniform, ErrorCode::kUniformIndent);
-  list.Add(CheckNoTabsBesidesIndentations, ErrorCode::kNotIndentTab);
+  list.Add(CheckLineLength);
+  list.Add(CheckParserSucceeds);
+  list.Add(CheckSemicolon);
+  list.Add(CheckUppercaseKeywords);
+  list.Add(CheckCommentType);
+  list.Add(CheckAliasKeyword);
+  list.Add(CheckTabCharactersUniform);
+  list.Add(CheckNoTabsBesidesIndentations);
   return list;
 }
 
 // It runs all specified checks
 // "LinterOptions" parameter will be added in future.
 LinterResult RunChecks(absl::string_view sql) {
-  // Variable 'config_options' disregards in-file configuration changes,
-  // it is only to construct a basis for option_map.
-  LinterOptions config_options = GetOptionsFromConfig();
+  LinterOptions options = GetOptionsFromConfig();
   CheckList list = GetAllChecks();
-  std::map<ErrorCode, LinterOptions> option_map;
-  LinterResult result = ParseNoLintComments(sql, config_options, &option_map);
+  LinterResult result = ParseNoLintComments(sql, &options);
 
-  for (CheckListObject object : list.GetList()) {
-    std::function<LinterResult(absl::string_view, LinterOptions)> check =
-        object.GetCheck();
-    ErrorCode code = object.GetCode();
-    if (!option_map.count(code)) option_map[code] = config_options;
-    result.Add(check(sql, option_map[code]));
+  for (auto check : list.GetList()) {
+    result.Add(check(sql, options));
   }
   return result;
 }

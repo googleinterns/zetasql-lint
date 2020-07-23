@@ -17,12 +17,27 @@
 #include "src/linter_options.h"
 
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
 namespace zetasql::linter {
 
-bool LinterOptions::IsActive(int position) const {
+bool LinterOptions::IsActive(ErrorCode code, int position) const {
+  // Default value of a check activity is true.
+  if (!option_map_.count(code)) return true;
+  return option_map_.at(code).IsActive(position);
+}
+
+void LinterOptions::Disable(ErrorCode code, int position) {
+  option_map_[code].Disable(position);
+}
+
+void LinterOptions::Enable(ErrorCode code, int position) {
+  option_map_[code].Enable(position);
+}
+
+bool LinterOptions::CheckOptions::IsActive(int position) const {
   bool active = active_start_;
   for (int i = 0;
        i < static_cast<int>(switchs_.size()) && switchs_[i] < position; ++i)
@@ -30,13 +45,13 @@ bool LinterOptions::IsActive(int position) const {
   return active;
 }
 
-void LinterOptions::Disable(int position) {
+void LinterOptions::CheckOptions::Disable(int position) {
   bool active = active_start_;
   if (switchs_.size() & 1) active = !active;
   if (active) switchs_.push_back(position);
 }
 
-void LinterOptions::Enable(int position) {
+void LinterOptions::CheckOptions::Enable(int position) {
   bool active = active_start_;
   if (switchs_.size() & 1) active = !active;
   if (!active) switchs_.push_back(position);
