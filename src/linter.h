@@ -36,10 +36,11 @@ namespace zetasql::linter {
 // It gets rule and applies that rule to every ASTnode it visit.
 class RuleVisitor : public NonRecursiveParseTreeVisitor {
  public:
-  RuleVisitor(const std::function<LinterResult(
-                  const ASTNode *, const absl::string_view &)> &rule,
-              const absl::string_view &sql)
-      : rule_(rule), sql_(sql), result_(absl::OkStatus()) {}
+  RuleVisitor(const std::function<LinterResult(const ASTNode *,
+                                               const absl::string_view &,
+                                               const LinterOptions &)> &rule,
+              const absl::string_view &sql, LinterOptions option)
+      : rule_(rule), sql_(sql), option_(option), result_(absl::OkStatus()) {}
 
   // It is a function that will be invoked each time a new
   // node is visited.
@@ -50,25 +51,31 @@ class RuleVisitor : public NonRecursiveParseTreeVisitor {
   LinterResult GetResult() { return result_; }
 
  private:
-  std::function<LinterResult(const ASTNode *, const absl::string_view &)> rule_;
+  std::function<LinterResult(const ASTNode *, const absl::string_view &,
+                             const LinterOptions &)>
+      rule_;
   absl::string_view sql_;
   LinterResult result_;
+  LinterOptions option_;
 };
 
 // Stores properties of a single rule and menages possible
 // applications of this rule.
 class ASTNodeRule {
  public:
-  explicit ASTNodeRule(const std::function<
-                       LinterResult(const ASTNode *, const absl::string_view &)>
-                           rule)
+  explicit ASTNodeRule(
+      const std::function<LinterResult(
+          const ASTNode *, const absl::string_view &, const LinterOptions &)>
+          rule)
       : rule_(rule) {}
 
   // It applies the rule stored in this class to a sql statement.
-  LinterResult ApplyTo(absl::string_view sql);
+  LinterResult ApplyTo(absl::string_view sql, LinterOptions option);
 
  private:
-  std::function<LinterResult(const ASTNode *, const absl::string_view &)> rule_;
+  std::function<LinterResult(const ASTNode *, const absl::string_view &,
+                             const LinterOptions &)>
+      rule_;
 };
 
 // Debugger that will be erased later.
@@ -76,34 +83,37 @@ LinterResult PrintASTTree(absl::string_view sql);
 
 // Checks if the number of characters in any line
 // exceed a certain treshold.
-LinterResult CheckLineLength(absl::string_view sql, int lineLimit = 100,
-                             const char delimeter = '\n');
+LinterResult CheckLineLength(absl::string_view sql,
+                             LinterOptions option = LinterOptions());
 
 // Checks whether input can be parsed with ZetaSQL parser.
-LinterResult CheckParserSucceeds(absl::string_view sql);
+LinterResult CheckParserSucceeds(absl::string_view sql,
+                                 LinterOptions option = LinterOptions());
 
 // Checks whether every statement ends with a semicolon ';'.
-LinterResult CheckSemicolon(absl::string_view sql);
+LinterResult CheckSemicolon(absl::string_view sql,
+                            LinterOptions option = LinterOptions());
 
 // Checks whether all keywords are uppercase.
-LinterResult CheckUppercaseKeywords(absl::string_view sql);
+LinterResult CheckUppercaseKeywords(absl::string_view sql,
+                                    LinterOptions option = LinterOptions());
 
 // Check if comment style is uniform (either -- or //, not both).
 LinterResult CheckCommentType(absl::string_view sql,
-                              const char delimeter = '\n');
+                              LinterOptions option = LinterOptions());
 
 // Checks whether all aliases denoted by 'AS' keyword.
-LinterResult CheckAliasKeyword(absl::string_view sql);
+LinterResult CheckAliasKeyword(absl::string_view sql,
+                               LinterOptions option = LinterOptions());
 
 // Checks whether all tab characters in indentations are equal to
 // <allowed_indent>.
 LinterResult CheckTabCharactersUniform(absl::string_view sql,
-                                       const char allowed_indent = ' ',
-                                       const char line_delimeter = '\n');
+                                       LinterOptions option = LinterOptions());
 
 // Checks whether there are no tabs in the code except indents.
-LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
-                                            const char line_delimeter = '\n');
+LinterResult CheckNoTabsBesidesIndentations(
+    absl::string_view sql, LinterOptions option = LinterOptions());
 
 }  // namespace zetasql::linter
 

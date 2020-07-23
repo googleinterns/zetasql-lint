@@ -17,27 +17,31 @@
 #ifndef SRC_LINT_ERRORS_H_
 #define SRC_LINT_ERRORS_H_
 
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "src/linter_options.h"
 #include "zetasql/base/status.h"
 
-namespace zetasql {
-
-namespace linter {
+namespace zetasql::linter {
 
 enum class ErrorCode : int {
   kLineLimit = 1,
   kParseFailed = 2,
   kSemicolon = 3,
-  kUppercase = 4,
+  kLetterCase = 4,
   kCommentStyle = 6,
   kAlias = 7,
-  kUniformTab = 16,
-  kNoIndentTab = 17
+  kUniformIndent = 16,
+  kNotIndentTab = 17,
+  kNoLint = 100,
 };
+
+// Returns string mapping of each ErrorCode
+std::map<std::string, ErrorCode> GetErrorMap();
 
 // Stores properties of a single lint error.
 class LintError {
@@ -130,12 +134,18 @@ class LinterResult {
   // will be used to inform user about lint errors in their sql file.
   void PrintResult();
 
+  // Sets if status messages will be shown to the user.
+  void SetShowStatus(bool show_status) { show_status_ = show_status; }
+
  private:
   std::vector<LintError> errors_;
   std::vector<absl::Status> status_;
+
+  // Whenever a lint check fails status message occurs. This variable
+  // determines if status messages should be shown to the user.
+  bool show_status_ = false;
 };
 
-}  // namespace linter
-}  // namespace zetasql
+}  // namespace zetasql::linter
 
 #endif  // SRC_LINT_ERRORS_H_

@@ -23,6 +23,7 @@
 
 #include "absl/strings/match.h"
 #include "gtest/gtest.h"
+#include "src/linter_options.h"
 
 namespace zetasql::linter {
 
@@ -35,13 +36,19 @@ TEST(LinterTest, StatementLineLengthCheck) {
       "SELECT c\n"
       "some long invalid sql statement that shouldn't stop check\n"
       "SELECT t from G\n";
+  LinterOptions option;
+  EXPECT_TRUE(CheckLineLength(sql, option).ok());
+  option.SetLineLimit(10);
+  EXPECT_FALSE(CheckLineLength(sql, option).ok());
+  option.SetLineDelimeter(' ');
+  EXPECT_TRUE(CheckLineLength(sql, option).ok());
 
-  EXPECT_TRUE(CheckLineLength(sql).ok());
-  EXPECT_FALSE(CheckLineLength(sql, 10).ok());
-  EXPECT_TRUE(CheckLineLength(sql, 10, ' ').ok());
+  option.SetLineLimit(100);
+  option.SetLineDelimeter('\n');
+  EXPECT_TRUE(CheckLineLength(multiline_sql, option).ok());
 
-  EXPECT_TRUE(CheckLineLength(multiline_sql).ok());
-  EXPECT_FALSE(CheckLineLength(multiline_sql, 30).ok());
+  option.SetLineLimit(30);
+  EXPECT_FALSE(CheckLineLength(multiline_sql, option).ok());
 }
 
 TEST(LinterTest, StatementValidityCheck) {
@@ -110,8 +117,10 @@ TEST(LinterTest, AliasKeywordCheck) {
 
 TEST(LinterTest, TabCharactersUniformCheck) {
   EXPECT_TRUE(CheckTabCharactersUniform("  SELECT 5;\n    SELECT 6;").ok());
+  LinterOptions option;
+  option.SetAllowedIndent('\t');
   EXPECT_TRUE(
-      CheckTabCharactersUniform("\tSELECT 5;\n\t\tSELECT 6;", '\t').ok());
+      CheckTabCharactersUniform("\tSELECT 5;\n\t\tSELECT 6;", option).ok());
   EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n SELECT\t6;\t").ok());
 
   EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n \t SELECT 6;")
@@ -122,7 +131,7 @@ TEST(LinterTest, TabCharactersUniformCheck) {
                   .GetErrors()
                   .back()
                   .GetPosition() == std::make_pair(2, 1));
-  EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n  SELECT 6;", '\t')
+  EXPECT_TRUE(CheckTabCharactersUniform("SELECT 5;\n  SELECT 6;", option)
                   .GetErrors()
                   .back()
                   .GetPosition() == std::make_pair(2, 1));

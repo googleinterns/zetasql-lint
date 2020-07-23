@@ -32,6 +32,18 @@
 
 namespace zetasql::linter {
 
+std::map<std::string, ErrorCode> GetErrorMap() {
+  static std::map<std::string, ErrorCode> error_map{
+      {"line-limit-exceed", ErrorCode::kLineLimit},
+      {"parser-failed", ErrorCode::kParseFailed},
+      {"statement-semilocon", ErrorCode::kSemicolon},
+      {"consistent-letter-case", ErrorCode::kLetterCase},
+      {"consistent-comment-style", ErrorCode::kCommentStyle},
+      {"alias", ErrorCode::kAlias},
+      {"uniform-indent", ErrorCode::kUniformIndent},
+      {"not-indent-tab", ErrorCode::kNotIndentTab}};
+  return error_map;
+}
 std::string LintError::GetErrorMessage() { return message_; }
 
 std::string LintError::ConstructPositionMessage() {
@@ -55,7 +67,8 @@ void LinterResult::PrintResult() {
        });
   for (LintError error : errors_) error.PrintError();
 
-  for (absl::Status status : status_) std::cerr << status << std::endl;
+  if (show_status_)
+    for (absl::Status status : status_) std::cerr << status << std::endl;
 
   std::cout << "Linter results are printed" << std::endl;
 }

@@ -33,6 +33,7 @@ cc_library(
     ],
     deps = [
         ":lint_errors",
+        ":linter_options",
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
 )
@@ -50,7 +51,20 @@ cc_library(
         "-Wno-sign-compare",
         "-Wno-switch",
     ],
-    deps = ["@com_google_zetasql//zetasql/public:parse_helpers"],
+    deps = [
+        ":linter_options",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
+    ],
+)
+
+cc_library(
+    name = "linter_options",
+    srcs = [
+        "linter_options.cc",
+    ],
+    hdrs = [
+        "linter_options.h",
+    ],
 )
 
 cc_binary(
@@ -77,6 +91,7 @@ cc_test(
     deps = [
         ":lint_errors",
         ":linter",
+        ":linter_options",
         "@com_google_googletest//:gtest_main",
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
