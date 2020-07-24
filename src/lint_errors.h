@@ -17,6 +17,7 @@
 #ifndef SRC_LINT_ERRORS_H_
 #define SRC_LINT_ERRORS_H_
 
+#include <iostream>
 #include <map>
 #include <string>
 #include <utility>
@@ -39,6 +40,8 @@ enum class ErrorCode : int {
   kNoLint = 100,
 };
 
+std::ostream& operator<<(std::ostream& os, const ErrorCode& obj);
+
 // Returns string mapping of each ErrorCode
 std::map<std::string, ErrorCode> GetErrorMap();
 
@@ -58,7 +61,9 @@ class LintError {
 
   // Returns the position where the error occured,
   // in a pair with <line, column> format.
-  std::pair<int, int> GetPosition() { return std::make_pair(line_, column_); }
+  std::pair<int, int> GetPosition() const {
+    return std::make_pair(line_, column_);
+  }
 
   // Constructs a text message with code position info.
   std::string ConstructPositionMessage();
@@ -69,6 +74,9 @@ class LintError {
 
   // Returns the line number where the error occured.
   int GetLineNumber() const { return line_; }
+
+  // Returns the type of the lint error
+  ErrorCode GetType() const { return type_; }
 
  private:
   // Holds type of the lint error. Type of an error is a number
@@ -99,7 +107,7 @@ class LinterResult {
       : errors_(std::vector<LintError>()),
         status_(std::vector<absl::Status>()) {}
 
-  explicit LinterResult(const absl::Status &status);
+  explicit LinterResult(const absl::Status& status);
 
   // This function adds a new lint error that occured in 'sql' in
   // location 'character_location', and 'type' refers to
@@ -121,7 +129,10 @@ class LinterResult {
   bool ok();
 
   // Clears all errors.
-  void clear();
+  void Clear();
+
+  // Sorts all errors.
+  void Sort();
 
   // Returns all Lint Errors that are detected.
   std::vector<LintError> GetErrors() { return errors_; }

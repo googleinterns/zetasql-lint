@@ -3,3 +3,5 @@ bazel-out
 bazel-testlogs
 bazel-zetasql-lint
 src/example.sql
+trial.sql
+config.proto

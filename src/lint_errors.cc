@@ -32,6 +32,14 @@
 
 namespace zetasql::linter {
 
+std::ostream& operator<<(std::ostream& os, const ErrorCode& obj) {
+  std::string s = "No such ErrorCode";
+  for (auto& it : GetErrorMap())
+    if (it.second == obj) s = it.first;
+  os << s;
+  return os;
+}
+
 std::map<std::string, ErrorCode> GetErrorMap() {
   static std::map<std::string, ErrorCode> error_map{
       {"line-limit-exceed", ErrorCode::kLineLimit},
@@ -60,11 +68,7 @@ void LintError::PrintError() {
 }
 
 void LinterResult::PrintResult() {
-  // Need to sort according to increasing line number
-  sort(errors_.begin(), errors_.end(),
-       [&](const LintError &a, const LintError &b) {
-         return a.GetLineNumber() < b.GetLineNumber();
-       });
+  Sort();
   for (LintError error : errors_) error.PrintError();
 
   if (show_status_)
@@ -73,7 +77,7 @@ void LinterResult::PrintResult() {
   std::cout << "Linter results are printed" << std::endl;
 }
 
-LinterResult::LinterResult(const absl::Status &status) {
+LinterResult::LinterResult(const absl::Status& status) {
   if (!status.ok()) status_.push_back(status);
 }
 
@@ -102,6 +106,13 @@ void LinterResult::Add(LinterResult result) {
 
 bool LinterResult::ok() { return errors_.empty() && status_.empty(); }
 
-void LinterResult::clear() { errors_.clear(); }
+void LinterResult::Clear() { errors_.clear(); }
+
+void LinterResult::Sort() {
+  sort(errors_.begin(), errors_.end(),
+       [&](const LintError& a, const LintError& b) {
+         return a.GetPosition() < b.GetPosition();
+       });
+}
 
 }  // namespace zetasql::linter

@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "src/execute_linter.h"
+
+#include <cctype>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -22,7 +25,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "re2/re2.h"
 #include "src/lint_errors.h"
 #include "src/linter.h"
 #include "src/linter_options.h"
@@ -31,50 +37,43 @@
 
 namespace zetasql::linter {
 
-namespace {
-
 // This function will parse "NOLINT"(<CheckName>) syntax from
 // a single line of comment.
 // If NOLINT usage errors occur, it counts as a lint
 // error and it will be returned in a result.
 LinterResult ParseNoLintSingleComment(absl::string_view line,
+                                      const absl::string_view& sql,
                                       LinterOptions* options, int position) {
   LinterResult result;
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
-  int i = 0;
 
-  // Skip spaces from the beginning.
-  while (i < static_cast<int>(line.size()) && line[i] == ' ') ++i;
+  const LazyRE2 kRegex = {"\\s*(NOLINT|LINT)\\s*\\(([a-z ,-]*)\\)\\s*(.*)\\s*"};
+  std::string type = "";
+  std::string check_names = "";
+  std::string lint_comment = "";
+  bool matched =
+      RE2::FullMatch(line, *kRegex, &type, &check_names, &lint_comment);
 
   // Found enabling or disabling type of comment.
-  if (line.substr(i, 6) == "NOLINT" || line.substr(i, 4) == "LINT") {
-    // Stores if it is "NOLINT" or "LINT"
-    bool is_it_disabling = (line.substr(i, 6) == "NOLINT");
-    while (i < static_cast<int>(line.size()) && line[i] != '(') ++i;
-    ++i;
+  if (matched) {
+    check_names.erase(
+        std::remove_if(check_names.begin(), check_names.end(), ::isspace),
+        check_names.end());
 
-    std::string check_name = "";
-    while (i < static_cast<int>(line.size()) && line[i - 1] != ')') {
-      if (line[i] == ' ') continue;
-      if (line[i] == ',' || line[i] == ')') {
-        // The name inside of parantheses is stored in 'check_name'
-        // If it is not valid add error, otherwise enable/disable position
-        if (!error_map.count(check_name)) {
-          result.Add(
-              ErrorCode::kNoLint, line, position + i,
-              absl::StrCat("Unkown NOLINT error category: ", check_name));
-        } else {
-          const ErrorCode& code = error_map[check_name];
-          if (is_it_disabling)
-            options->Disable(code, position + i);
-          else
-            options->Enable(code, position + i);
-        }
-        check_name = "";
+    std::vector<std::string> names = absl::StrSplit(check_names, ',');
+    for (std::string check_name : names) {
+      // The name inside of parantheses is stored in 'check_name'
+      // If it is not valid add error, otherwise enable/disable position
+      if (!error_map.count(check_name)) {
+        result.Add(ErrorCode::kNoLint, sql, position,
+                   absl::StrCat("Unkown NOLINT error category: ", check_name));
       } else {
-        check_name += line[i];
+        const ErrorCode& code = error_map[check_name];
+        if (type == "NOLINT")
+          options->Disable(code, position);
+        else
+          options->Enable(code, position);
       }
-      ++i;
     }
   }
   return result;
@@ -123,7 +122,7 @@ LinterResult ParseNoLintComments(absl::string_view sql,
       while (i + 1 < static_cast<int>(sql.size()) &&
              sql[i] != options->LineDelimeter())
         line += sql[++i];
-      result.Add(ParseNoLintSingleComment(sql, options, i));
+      result.Add(ParseNoLintSingleComment(line, sql, options, i));
       continue;
     }
   }
@@ -135,29 +134,6 @@ LinterOptions GetOptionsFromConfig() {
   // TODO(orhanuysal): Connect here with a config file.
   return LinterOptions();
 }
-
-// TODO(orhanuysal): Move these classes to proper .h file
-// when a good file name is chosen.
-
-// It is the general list of the linter checks. It can be used to
-// verify if a place is controlling all of the checks and not missing any.
-class CheckList {
- public:
-  std::vector<
-      std::function<LinterResult(absl::string_view, const LinterOptions&)>>
-  GetList() {
-    return list_;
-  }
-  void Add(std::function<LinterResult(absl::string_view, const LinterOptions&)>
-               check) {
-    list_.push_back(check);
-  }
-
- private:
-  std::vector<
-      std::function<LinterResult(absl::string_view, const LinterOptions&)>>
-      list_;
-};
 
 // This function is the main function to get all the checks.
 // Whenever a new check is added this should be
@@ -175,10 +151,7 @@ CheckList GetAllChecks() {
   return list;
 }
 
-// It runs all specified checks
-// "LinterOptions" parameter will be added in future.
-LinterResult RunChecks(absl::string_view sql) {
-  LinterOptions options = GetOptionsFromConfig();
+LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
   CheckList list = GetAllChecks();
   LinterResult result = ParseNoLintComments(sql, &options);
 
@@ -188,23 +161,9 @@ LinterResult RunChecks(absl::string_view sql) {
   return result;
 }
 
-}  // namespace
-}  // namespace zetasql::linter
-
-int main(int argc, char* argv[]) {
-  if (argc < 1) {
-    std::cout << "Usage: execute_linter < <file_name>\n" << std::endl;
-    return 1;
-  }
-
-  std::string str;
-  for (std::string line; std::getline(std::cin, line);) {
-    str += line + "\n";
-  }
-  zetasql::linter::LinterResult result =
-      zetasql::linter::RunChecks(absl::string_view(str));
-
-  result.PrintResult();
-
-  return 0;
+LinterResult RunChecks(absl::string_view sql) {
+  LinterOptions options = GetOptionsFromConfig();
+  return RunChecks(sql, options);
 }
+
+}  // namespace zetasql::linter
