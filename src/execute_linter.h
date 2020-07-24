@@ -30,12 +30,13 @@
 
 namespace zetasql::linter {
 
-// This function will parse "NOLINT"(<CheckName>) syntax from
+// This function will parse "NOLINT"(<Name1>, <Name2>, ...) syntax from
 // a single line of comment.
 // If NOLINT usage errors occur, it counts as a lint
 // error and it will be returned in a result.
 LinterResult ParseNoLintSingleComment(absl::string_view line,
-                                      LinterOptions* options, int position);
+                                      const absl::string_view& sql,
+                                      int position, LinterOptions* options);
 
 // This function will parse "NOLINT"(<CheckName>) syntax from a sql file.
 // If NOLINT usage errors occur, it counts as a lint

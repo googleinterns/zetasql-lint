@@ -37,13 +37,9 @@
 
 namespace zetasql::linter {
 
-// This function will parse "NOLINT"(<CheckName>) syntax from
-// a single line of comment.
-// If NOLINT usage errors occur, it counts as a lint
-// error and it will be returned in a result.
 LinterResult ParseNoLintSingleComment(absl::string_view line,
                                       const absl::string_view& sql,
-                                      LinterOptions* options, int position) {
+                                      int position, LinterOptions* options) {
   LinterResult result;
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
@@ -79,9 +75,8 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
   return result;
 }
 
-// This function will parse "NOLINT"(<CheckName>) syntax from a sql file.
-// If NOLINT usage errors occur, it counts as a lint
-// error and it will be returned in a result.
+// TODO(orhanuysal): Extract the code so that 'CheckCommentType'
+// implementation and this implementation won't have the same parts.
 LinterResult ParseNoLintComments(absl::string_view sql,
                                  LinterOptions* options) {
   LinterResult result;
@@ -122,7 +117,7 @@ LinterResult ParseNoLintComments(absl::string_view sql,
       while (i + 1 < static_cast<int>(sql.size()) &&
              sql[i] != options->LineDelimeter())
         line += sql[++i];
-      result.Add(ParseNoLintSingleComment(line, sql, options, i));
+      result.Add(ParseNoLintSingleComment(line, sql, i, options));
       continue;
     }
   }
@@ -135,9 +130,6 @@ LinterOptions GetOptionsFromConfig() {
   return LinterOptions();
 }
 
-// This function is the main function to get all the checks.
-// Whenever a new check is added this should be
-// the first place to update.
 CheckList GetAllChecks() {
   CheckList list;
   list.Add(CheckLineLength);
