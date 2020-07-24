@@ -13,55 +13,149 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "src/execute_linter.h"
+
+#include <cctype>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <streambuf>
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "re2/re2.h"
 #include "src/lint_errors.h"
 #include "src/linter.h"
+#include "src/linter_options.h"
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
 
 namespace zetasql::linter {
 
-namespace {
-// It runs all specified checks
-// "LinterOptions" parameter will be added in future.
-LinterResult RunChecks(absl::string_view sql) {
+LinterResult ParseNoLintSingleComment(absl::string_view line,
+                                      const absl::string_view& sql,
+                                      int position, LinterOptions* options) {
   LinterResult result;
-  result.Add(CheckLineLength(sql));
-  result.Add(CheckParserSucceeds(sql));
-  result.Add(CheckSemicolon(sql));
-  result.Add(CheckUppercaseKeywords(sql));
-  result.Add(CheckCommentType(sql));
-  result.Add(CheckAliasKeyword(sql));
-  result.Add(CheckTabCharactersUniform(sql));
-  result.Add(CheckNoTabsBesidesIndentations(sql));
+  std::map<std::string, ErrorCode> error_map = GetErrorMap();
+
+  const LazyRE2 kRegex = {"\\s*(NOLINT|LINT)\\s*\\(([a-z ,-]*)\\)\\s*(.*)\\s*"};
+  std::string type = "";
+  std::string check_names = "";
+  std::string lint_comment = "";
+  bool matched =
+      RE2::FullMatch(line, *kRegex, &type, &check_names, &lint_comment);
+
+  // Found enabling or disabling type of comment.
+  if (matched) {
+    check_names.erase(
+        std::remove_if(check_names.begin(), check_names.end(), ::isspace),
+        check_names.end());
+
+    std::vector<std::string> names = absl::StrSplit(check_names, ',');
+    for (std::string check_name : names) {
+      // The name inside of parantheses is stored in 'check_name'
+      // If it is not valid add error, otherwise enable/disable position
+      if (!error_map.count(check_name)) {
+        result.Add(ErrorCode::kNoLint, sql, position,
+                   absl::StrCat("Unkown NOLINT error category: ", check_name));
+      } else {
+        const ErrorCode& code = error_map[check_name];
+        if (type == "NOLINT")
+          options->Disable(code, position);
+        else
+          options->Enable(code, position);
+      }
+    }
+  }
   return result;
 }
 
-}  // namespace
-}  // namespace zetasql::linter
+// TODO(orhanuysal): Extract the code so that 'CheckCommentType'
+// implementation and this implementation won't have the same parts.
+LinterResult ParseNoLintComments(absl::string_view sql,
+                                 LinterOptions* options) {
+  LinterResult result;
+  for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
+    if (sql[i] == '\'' || sql[i] == '"') {
+      // The sql is inside string. This will ignore sql part until
+      // the same type(' or ") of character will occur
+      // without \ in the beginning. For example 'a"b' is a valid string.
+      for (int j = i + 1; j < static_cast<int>(sql.size()); ++j) {
+        if (sql[j - 1] == '\\' && sql[j] == sql[i]) continue;
+        if (sql[j] == sql[i] || j + 1 == static_cast<int>(sql.size())) {
+          i = j;
+          break;
+        }
+      }
+      continue;
+    }
 
-int main(int argc, char* argv[]) {
-  if (argc < 1) {
-    std::cout << "Usage: execute_linter < <file_name>\n" << std::endl;
-    return 1;
+    // Ignore multiline comments.
+    if (i > 0 && sql[i - 1] == '/' && sql[i] == '*') {
+      // It will start checking after '/*' and after the iteration
+      // finished, the pointer 'i' will be just after '*/' (incrementation
+      // from the for statement is included).
+      i += 2;
+      while (i < static_cast<int>(sql.size()) &&
+             !(sql[i - 1] == '*' && sql[i] == '/')) {
+        ++i;
+      }
+    }
+
+    bool is_line_comment = false;
+    if (i > 0 && sql[i - 1] == '-' && sql[i] == '-') is_line_comment = true;
+    if (i > 0 && sql[i - 1] == '/' && sql[i] == '/') is_line_comment = true;
+    if (sql[i] == '#') is_line_comment = true;
+
+    if (is_line_comment) {
+      std::string line = "";
+      while (i + 1 < static_cast<int>(sql.size()) &&
+             sql[i] != options->LineDelimeter())
+        line += sql[++i];
+      result.Add(ParseNoLintSingleComment(line, sql, i, options));
+      continue;
+    }
   }
 
-  std::string str;
-  for (std::string line; std::getline(std::cin, line);) {
-    str += line + "\n";
-  }
-  zetasql::linter::LinterResult result =
-      zetasql::linter::RunChecks(absl::string_view(str));
-
-  result.PrintResult();
-
-  return 0;
+  return result;
 }
+
+LinterOptions GetOptionsFromConfig() {
+  // TODO(orhanuysal): Connect here with a config file.
+  return LinterOptions();
+}
+
+CheckList GetAllChecks() {
+  CheckList list;
+  list.Add(CheckLineLength);
+  list.Add(CheckParserSucceeds);
+  list.Add(CheckSemicolon);
+  list.Add(CheckUppercaseKeywords);
+  list.Add(CheckCommentType);
+  list.Add(CheckAliasKeyword);
+  list.Add(CheckTabCharactersUniform);
+  list.Add(CheckNoTabsBesidesIndentations);
+  return list;
+}
+
+LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
+  CheckList list = GetAllChecks();
+  LinterResult result = ParseNoLintComments(sql, &options);
+
+  for (auto check : list.GetList()) {
+    result.Add(check(sql, options));
+  }
+  return result;
+}
+
+LinterResult RunChecks(absl::string_view sql) {
+  LinterOptions options = GetOptionsFromConfig();
+  return RunChecks(sql, options);
+}
+
+}  // namespace zetasql::linter
