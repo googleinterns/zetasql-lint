@@ -81,6 +81,7 @@ cc_library(
     deps = [
         ":lint_errors",
         ":linter",
+        ":config",
         "@com_google_zetasql//zetasql/public:parse_helpers",
         "@com_google_zetasql//zetasql/public/functions:like",
         "@com_googlesource_code_re2//:re2",

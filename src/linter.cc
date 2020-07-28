@@ -106,9 +106,12 @@ LinterResult CheckParserSucceeds(absl::string_view sql,
       // TODO(orhanuysal): Implement a token parser to seperate statements
       // currently, when parser fails, it is unable to determine
       // the end of the statement.
-      if (option.IsActive(ErrorCode::kParseFailed, byte_position))
+      if (option.IsActive(ErrorCode::kParseFailed, byte_position)) {
+        return LinterResult(status);
+        // ErrorLocation location = internal::GetPayload<ErrorLocation>(status);
         result.Add(ErrorCode::kParseFailed, sql, byte_position,
-                   "Parser Failed");
+                   absl::StrCat("Parser Failed, with message ", status.message()));
+      }
       break;
     }
   }
@@ -126,14 +129,14 @@ LinterResult CheckSemicolon(absl::string_view sql,
   while (!is_the_end) {
     absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
                                                    &output, &is_the_end);
-    if (!status.ok()) return LinterResult(status);
+    if (!status.ok()) return LinterResult();
     int location =
         output->statement()->GetParseLocationRange().end().GetByteOffset();
 
     if (location >= sql.size() || sql[location] != ';') {
       if (option.IsActive(ErrorCode::kSemicolon, location))
         result.Add(ErrorCode::kSemicolon, sql, location,
-                   "Each statemnt should end with a consequtive"
+                   "Each statement should end with a "
                    "semicolon ';'");
     }
   }
@@ -175,7 +178,7 @@ LinterResult CheckUppercaseKeywords(absl::string_view sql,
         int position = token.GetLocationRange().start().GetByteOffset();
         if (option.IsActive(ErrorCode::kLetterCase, position))
           result.Add(ErrorCode::kLetterCase, sql, position,
-                     "All keywords should be Uppercase");
+                     "All keywords should be either uppercase or lowercase");
       }
     }
   }
@@ -265,7 +268,7 @@ LinterResult ASTNodeRule::ApplyTo(absl::string_view sql,
   while (!is_the_end) {
     status = ParseNextScriptStatement(&location, ParserOptions(), &output,
                                       &is_the_end);
-    if (!status.ok()) return LinterResult(status);
+    if (!status.ok()) return LinterResult();
 
     status = output->statement()->TraverseNonRecursive(&visitor);
     if (!status.ok()) return LinterResult(status);
@@ -339,7 +342,7 @@ LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
     } else if (sql[i] == kTab && !is_indent) {
       if (option.IsActive(ErrorCode::kNotIndentTab, i))
         result.Add(ErrorCode::kNotIndentTab, sql, i,
-                   "Tab is not in the indentation, expected space");
+                   "Tab is not in the indentation");
     }
   }
 

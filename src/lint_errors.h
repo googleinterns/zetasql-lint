@@ -153,7 +153,7 @@ class LinterResult {
 
   // Whenever a lint check fails status message occurs. This variable
   // determines if status messages should be shown to the user.
-  bool show_status_ = false;
+  bool show_status_ = true;
 };
 
 }  // namespace zetasql::linter

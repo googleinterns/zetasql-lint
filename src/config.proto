@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package zetasql.linter;
+
+message Config {
+  optional int32 tab_size = 1;
+  optional int32 end_line = 2;
+  optional int32 line_limit = 3;
+  optional int32 allowed_indent = 4;
+  repeated string nolint = 5;
+}

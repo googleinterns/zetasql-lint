@@ -37,6 +37,12 @@ void LinterOptions::Enable(ErrorCode code, int position) {
   option_map_[code].Enable(position);
 }
 
+void LinterOptions::DisactivateCheck(ErrorCode code) {
+  if (!option_map_.count(code))
+    option_map_[code] = CheckOptions();
+  option_map_[code].SetActiveStart(false);
+}
+
 bool LinterOptions::CheckOptions::IsActive(int position) const {
   bool active = active_start_;
   for (int i = 0;
@@ -56,4 +62,5 @@ void LinterOptions::CheckOptions::Enable(int position) {
   if (switchs_.size() & 1) active = !active;
   if (!active) switchs_.push_back(position);
 }
+
 }  // namespace zetasql::linter

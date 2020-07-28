@@ -27,6 +27,8 @@
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
 #include "zetasql/base/statusor.h"
+#include "zetasql/common/errors.h"
+#include "zetasql/common/status_payload_utils.h"
 #include "zetasql/public/parse_helpers.h"
 #include "zetasql/public/parse_location.h"
 
@@ -44,7 +46,7 @@ std::map<std::string, ErrorCode> GetErrorMap() {
   static std::map<std::string, ErrorCode> error_map{
       {"line-limit-exceed", ErrorCode::kLineLimit},
       {"parser-failed", ErrorCode::kParseFailed},
-      {"statement-semilocon", ErrorCode::kSemicolon},
+      {"statement-semicolon", ErrorCode::kSemicolon},
       {"consistent-letter-case", ErrorCode::kLetterCase},
       {"consistent-comment-style", ErrorCode::kCommentStyle},
       {"alias", ErrorCode::kAlias},
@@ -67,12 +69,22 @@ void LintError::PrintError() {
   }
 }
 
+std::string ConstructPositionMessage(ErrorLocation location) {
+  return absl::StrCat("In line ", location.line(), ", column ",
+                      location.column(), ": ");
+}
+
 void LinterResult::PrintResult() {
   Sort();
   for (LintError error : errors_) error.PrintError();
 
-  if (show_status_)
-    for (absl::Status status : status_) std::cerr << status << std::endl;
+  if (show_status_) {
+    for (absl::Status status : status_) {
+      ErrorLocation location = internal::GetPayload<ErrorLocation>(status);
+      std::cerr << ConstructPositionMessage(location) << status.message()
+                << std::endl;
+    }
+  }
 
   std::cout << "Linter results are printed" << std::endl;
 }

@@ -29,6 +29,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "re2/re2.h"
+#include "src/config.pb.h"
 #include "src/lint_errors.h"
 #include "src/linter.h"
 #include "src/linter_options.h"
@@ -125,9 +126,26 @@ LinterResult ParseNoLintComments(absl::string_view sql,
   return result;
 }
 
-LinterOptions GetOptionsFromConfig() {
-  // TODO(orhanuysal): Connect here with a config file.
-  return LinterOptions();
+LinterOptions GetOptionsFromConfig(Config config) {
+  LinterOptions option;
+  if (config.has_tab_size()) option.SetTabSize(config.tab_size());
+
+  if (config.has_end_line()) option.SetLineDelimeter(config.end_line());
+
+  if (config.has_line_limit()) option.SetLineLimit(config.line_limit());
+
+  if (config.has_allowed_indent())
+    option.SetAllowedIndent(config.allowed_indent());
+
+  std::map<std::string, ErrorCode> error_map = GetErrorMap();
+
+  for (std::string check_name : config.nolint()) {
+    if (error_map.count(check_name)) {
+      option.DisactivateCheck(error_map[check_name]);
+    }
+  }
+
+  return option;
 }
 
 CheckList GetAllChecks() {
@@ -153,8 +171,13 @@ LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
   return result;
 }
 
+LinterResult RunChecks(absl::string_view sql, Config config) {
+  LinterOptions options = GetOptionsFromConfig(config);
+  return RunChecks(sql, options);
+}
+
 LinterResult RunChecks(absl::string_view sql) {
-  LinterOptions options = GetOptionsFromConfig();
+  LinterOptions options;
   return RunChecks(sql, options);
 }
 
