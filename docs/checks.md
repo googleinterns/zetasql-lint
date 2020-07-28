@@ -1,14 +1,14 @@
 # Checks
 Each linter check is associated with a check name. Check names are listed as below:
 
-1. [line-limit-exceed](line-limit-exceed)
-2. [parser-failed](parser-failed)
-3. [statement-semicolon](statement-semicolon)
-4. [consistent-letter-case](consistent-letter-case)
-5. [consistent-comment-style](consistent-comment-style)
-6. [alias](alias)
-7. [uniform-indent](uniform-indent)
-8. [not-indent-tab](not-indent-tab)
+1. [line-limit-exceed](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#line-limit-exceed)
+2. [parser-failed](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#parser-failed)
+3. [statement-semicolon](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#statement-semicolon)
+4. [consistent-letter-case](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#consistent-letter-case)
+5. [consistent-comment-style](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#consistent-comment-style)
+6. [alias](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#alias)
+7. [uniform-indent](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#uniform-indent)
+8. [not-indent-tab](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#not-indent-tab)
 
 
 ## line-limit-exceed
