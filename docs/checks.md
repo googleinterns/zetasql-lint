@@ -1,28 +1,16 @@
 # Checks
 Each linter check is associated with a check name. Check names are listed as below:
 
-1. [line-limit-exceed](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#line-limit-exceed)
-2. [parser-failed](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#parser-failed)
-3. [statement-semicolon](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#statement-semicolon)
-4. [consistent-letter-case](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#consistent-letter-case)
-5. [consistent-comment-style](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#consistent-comment-style)
-6. [alias](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#alias)
-7. [uniform-indent](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#uniform-indent)
+1. [parser-failed](checks.md#parser-failed)
+2. [line-limit-exceed](checks.md#line-limit-exceed)
+3. [statement-semicolon](checks.md#statement-semicolon)
+4. [consistent-letter-case](checks.md#consistent-letter-case)
+5. [consistent-comment-style](checks.md#consistent-comment-style)
+6. [alias](checks.md#alias)
+7. [uniform-indent](checks.md#uniform-indent)
 8. [not-indent-tab](checks.md#not-indent-tab)
 
 
-## line-limit-exceed
-Each line in an SQL file should contain less characters than a configurable [line limit](config.md#config).
-
-**Example**
-```sql
--- Here is a very long comment that will exceed line limit and should be seperated into different lines.
-SELECT *;
-```
-**Linter Output**
-```
-In line 1, column 101: Lines should be <= 100 characters long
-```
 ## parser-failed
 Checks if ZetaSQL parser succeeds to parse your sql statements. 
 
@@ -36,6 +24,19 @@ SELECT A FROM B C D;
 **Linter Output**
 ```
 In line 4, column 19: Syntax error: Expected end of input but got identifier "D"
+```
+
+## line-limit-exceed
+Each line in an SQL file should contain less characters than a configurable [line limit](config.md#config).
+
+**Example**
+```sql
+-- Here is a very long comment that will exceed line limit and should be seperated into different lines.
+SELECT *;
+```
+**Linter Output**
+```
+In line 1, column 101: Lines should be <= 100 characters long
 ```
 
 ## statement-semicolon
@@ -101,7 +102,7 @@ SELECT A a;
 In line 5, column 10: Always use AS keyword before aliases
 ```
 ## uniform-indent
-Indentation character should be uniform. Generally, either tabs or spaces are used. It is configurable with variable [allowed_indent](). By default, spaces are expected to be used as the indentation character.
+Indentation character should be uniform. Generally, either tabs or spaces are used. It is configurable with variable [allowed_indent](config.md#config). By default, spaces are expected to be used as the indentation character.
 
 **Example**
 ```sql
