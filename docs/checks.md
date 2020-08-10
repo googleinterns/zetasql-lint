@@ -8,11 +8,11 @@ Each linter check is associated with a check name. Check names are listed as bel
 5. [consistent-comment-style](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#consistent-comment-style)
 6. [alias](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#alias)
 7. [uniform-indent](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#uniform-indent)
-8. [not-indent-tab](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md#not-indent-tab)
+8. [not-indent-tab](checks.md#not-indent-tab)
 
 
 ## line-limit-exceed
-Each line in an SQL file should contain less characters than a configurable [line limit]().
+Each line in an SQL file should contain less characters than a configurable [line limit](config.md#config).
 
 **Example**
 ```sql
@@ -123,6 +123,7 @@ In line 9, column 1: Inconsistent use of indentation symbols, expected: whitespa
 ```
 ## not-indent-tab
 There shouldn't be any tab characters besides from indentation.
+
 **Example**
 ```sql
 -- Indentation character is set as tabs in configuration.
