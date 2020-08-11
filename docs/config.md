@@ -18,4 +18,5 @@ message Config {
 |int32|end_line|'\n'|End line character used to separate lines|
 |int32|line_limit|100|Maximum number of characters one line should contain|
 |int32|allowed_indent|' '(whitespace)|Allowed indentation character(usually ' ' or '\t')|
-|string*|nolint|{}|List of [check names](https://github.com/googleinterns/zetasql-lint/blob/proto/docs/checks.md) that will be disabled|
+|bool|single_quote|true|Whether single or double quote will used in sql file, checked by this [rule](config.md#single-or-double-quote)|
+|string*|nolint|{}|List of [check names](checks.md) that will be disabled|
