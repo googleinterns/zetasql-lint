@@ -24,9 +24,9 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "src/check_list.h"
 #include "src/lint_errors.h"
 #include "src/linter.h"
-#include "src/check_list.h"
 #include "src/linter_options.h"
 
 namespace zetasql::linter {

@@ -52,6 +52,9 @@ class CheckList {
       list_;
 };
 
+// This function gives all Checks that are using ZetaSQL parser.
+CheckList GetParserDependantChecks();
+
 // This function is the main function to get all the checks.
 // Whenever a new check is added this should be
 // the first place to update.

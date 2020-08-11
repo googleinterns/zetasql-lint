@@ -20,11 +20,11 @@
 namespace zetasql::linter {
 
 CheckList GetParserDependantChecks() {
-    CheckList list;
-    list.Add(CheckSemicolon);
-    list.Add(CheckAliasKeyword);
-    list.Add(CheckNames);
-    return list;
+  CheckList list;
+  list.Add(CheckSemicolon);
+  list.Add(CheckAliasKeyword);
+  list.Add(CheckNames);
+  return list;
 }
 
 CheckList GetAllChecks() {

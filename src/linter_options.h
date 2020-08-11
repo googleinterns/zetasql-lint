@@ -76,9 +76,7 @@ class LinterOptions {
   char SingleQuote() const { return single_quote_; }
 
   // Setter for single_quote_.
-  void SetSingleQuote(char single_quote) {
-    single_quote_ = single_quote;
-  }
+  void SetSingleQuote(char single_quote) { single_quote_ = single_quote; }
 
   // Changes if any lint is active from the start.
   void DisactivateCheck(ErrorCode code);

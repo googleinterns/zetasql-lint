@@ -36,7 +36,7 @@ cc_library(
         ":linter",
         ":linter_options",
         "@com_google_zetasql//zetasql/public:parse_helpers",
-    ]
+    ],
 )
 
 cc_library(
@@ -99,10 +99,10 @@ cc_library(
         "execute_linter.h",
     ],
     deps = [
+        ":check_list",
+        ":config",
         ":lint_errors",
         ":linter",
-        ":config",
-        ":check_list",
         "@com_google_zetasql//zetasql/public:parse_helpers",
         "@com_google_zetasql//zetasql/public/functions:like",
         "@com_googlesource_code_re2//:re2",
@@ -130,6 +130,7 @@ cc_test(
     size = "small",
     srcs = ["linter_test.cc"],
     deps = [
+        ":check_list",
         ":lint_errors",
         ":linter",
         ":linter_options",

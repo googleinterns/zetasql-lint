@@ -436,8 +436,6 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
                         const LinterOptions &option) -> LinterResult {
            LinterResult result;
            if (node->node_kind() == AST_IDENTIFIER) {
-             if (node->parent()->node_kind() != AST_PATH_EXPRESSION)
-               return result;
              const ASTNodeKind kind = node->parent()->parent()->node_kind();
              int position =
                  node->GetParseLocationRange().start().GetByteOffset();
@@ -475,6 +473,11 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
                    option.IsActive(ErrorCode::kNaming, position))
                  result.Add(ErrorCode::kNaming, sql, position,
                             "Function parameters should be lower_snake_case.");
+             } else if (kind == AST_CREATE_CONSTANT_STATEMENT) {
+               if (!IsCapsSnakeCase(name) &&
+                   option.IsActive(ErrorCode::kNaming, position))
+                 result.Add(ErrorCode::kNaming, sql, position,
+                            "Constant names should be CAPS_SNAKE_CASE.");
              }
            }
            return result;

@@ -24,8 +24,8 @@
 
 #include "absl/strings/match.h"
 #include "gtest/gtest.h"
-#include "src/linter_options.h"
 #include "src/check_list.h"
+#include "src/linter_options.h"
 
 namespace zetasql::linter {
 
@@ -215,9 +215,69 @@ TEST(LinterTest, CheckSingleQuotes) {
   EXPECT_EQ(errors[1].GetPosition(), std::make_pair(2, 9));
 }
 
+TEST(LinterTest, CheckTableNames) {
+  LinterOptions option;
+  EXPECT_FALSE(CheckNames("CREATE TABLE TABLE_NAME;", option).ok());
+  EXPECT_TRUE(CheckNames("CREATE TABLE TableName;", option).ok());
+  EXPECT_FALSE(CheckNames("CREATE TABLE table_name;", option).ok());
+}
+
+TEST(LinterTest, CheckWindowNames) {
+  LinterOptions option;
+  EXPECT_TRUE(
+      CheckNames("SELECT a FROM B WINDOW WindowName AS T;", option).ok());
+  EXPECT_FALSE(
+      CheckNames("SELECT a FROM B WINDOW window_name AS T;", option).ok());
+}
+
+TEST(LinterTest, CheckFunctionNames) {
+  LinterOptions option;
+  EXPECT_TRUE(
+      CheckNames("CREATE TEMP TABLE FUNCTION BugScore();", option).ok());
+  EXPECT_FALSE(
+      CheckNames("CREATE TEMP TABLE FUNCTION bugScore();", option).ok());
+  EXPECT_FALSE(
+      CheckNames("CREATE TEMP TABLE FUNCTION bug_score();", option).ok());
+  EXPECT_TRUE(CheckNames("CREATE TEMP FUNCTION BugScore();", option).ok());
+}
+
+TEST(LinterTest, CheckSimpleTypeNames) {
+  LinterOptions option;
+  EXPECT_FALSE(CheckNames("CREATE TEMP FUNCTION A( s String );", option).ok());
+  EXPECT_TRUE(CheckNames("CREATE TEMP FUNCTION A( s STRING );", option).ok());
+  EXPECT_FALSE(CheckNames("CREATE TEMP FUNCTION A( s int64 );", option).ok());
+  EXPECT_TRUE(CheckNames("CREATE TEMP FUNCTION A( s INT64 );", option).ok());
+}
+
+TEST(LinterTest, CheckColumnNames) {
+  LinterOptions option;
+  EXPECT_TRUE(CheckNames("SELECT column_name;", option).ok());
+  EXPECT_TRUE(CheckNames("SELECT TableName.column_name;", option).ok());
+  EXPECT_FALSE(CheckNames("SELECT ColumnName;", option).ok());
+  EXPECT_FALSE(CheckNames("SELECT COLUMN_NAME;", option).ok());
+}
+
+TEST(LinterTest, CheckFunctionParameterNames) {
+  LinterOptions option;
+  EXPECT_TRUE(
+      CheckNames("CREATE TEMP FUNCTION A(string_param STRING);", option).ok());
+  EXPECT_FALSE(
+      CheckNames("CREATE TEMP FUNCTION A(STRING_PARAM STRING);", option).ok());
+  EXPECT_FALSE(
+      CheckNames("CREATE TEMP FUNCTION A( stringParam STRING );", option).ok());
+  EXPECT_FALSE(
+      CheckNames("CREATE TEMP FUNCTION A( StringParam STRING );", option).ok());
+}
+
+TEST(LinterTest, CheckConstantNames) {
+  LinterOptions option;
+  EXPECT_FALSE(CheckNames("CREATE PUBLIC CONSTANT TwoPi = 6.28;", option).ok());
+  EXPECT_TRUE(CheckNames("CREATE PUBLIC CONSTANT TWO_PI = 6.28;", option).ok());
+}
+
 TEST(LinterTest, ParserDependentChecks) {
   LinterOptions option;
-  for (auto check : GetParserDependentChecks()) {
+  for (auto check : GetParserDependantChecks().GetList()) {
     // If there is no semicolon in between Parser fails and this check shouldn't
     // give extra errors aside from Parser Check.
     EXPECT_TRUE(check("SELECT 3+5\nSELECT 4+6;", option).GetErrors().empty());

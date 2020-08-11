@@ -152,7 +152,6 @@ LinterOptions GetOptionsFromConfig(Config config) {
 LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
   CheckList list = GetAllChecks();
   LinterResult result = ParseNoLintComments(sql, &options);
-  PrintASTTree(sql);
   for (auto check : list.GetList()) {
     result.Add(check(sql, options));
   }
