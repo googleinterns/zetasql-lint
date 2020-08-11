@@ -29,14 +29,16 @@
 namespace zetasql::linter {
 
 enum class ErrorCode : int {
-  kLineLimit = 1,
-  kParseFailed = 2,
+  kParseFailed = 1,
+  kLineLimit = 2,
   kSemicolon = 3,
   kLetterCase = 4,
+  kNaming = 5,
   kCommentStyle = 6,
   kAlias = 7,
   kUniformIndent = 16,
   kNotIndentTab = 17,
+  kSingleQuote = 18,
   kNoLint = 100,
 };
 

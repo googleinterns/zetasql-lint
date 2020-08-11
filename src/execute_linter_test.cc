@@ -50,10 +50,6 @@ TEST(NolintTest, MultipleDisabling) {
   result.Sort();
   std::vector<LintError> errors = result.GetErrors();
 
-  for (auto error : errors)
-    std::cout << error.GetErrorMessage() << " " << error.GetLineNumber()
-              << std::endl;
-
   EXPECT_EQ(errors.size(), 4);
 
   EXPECT_TRUE(errors[0].GetType() == ErrorCode::kLetterCase);

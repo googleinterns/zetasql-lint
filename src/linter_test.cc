@@ -20,10 +20,12 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "absl/strings/match.h"
 #include "gtest/gtest.h"
 #include "src/linter_options.h"
+#include "src/check_list.h"
 
 namespace zetasql::linter {
 
@@ -75,7 +77,7 @@ TEST(LinterTest, SemicolonCheck) {
   LinterOptions option;
   EXPECT_TRUE(CheckSemicolon("SELECT 3+5;\nSELECT 4+6;", option).ok());
   EXPECT_TRUE(CheckSemicolon("SELECT 3+5;   \n   SELECT 4+6;", option).ok());
-  EXPECT_FALSE(CheckSemicolon("SELECT 3+5\nSELECT 4+6;", option).ok());
+
   EXPECT_FALSE(CheckSemicolon("SELECT 3+5;  \nSELECT 4+6", option).ok());
   EXPECT_FALSE(CheckSemicolon("SELECT 3+5  ;  \nSELECT 4+6", option).ok());
 }
@@ -88,9 +90,15 @@ TEST(LinterTest, UppercaseKeywordCheck) {
   EXPECT_TRUE(CheckUppercaseKeywords(
                   "SELECT * FROM emp where b = a or c < d GROUP by x", option)
                   .ok());
-  EXPECT_FALSE(CheckUppercaseKeywords(
-                   "SeLEct * frOM emp wHEre b = a or c < d GROUP by x", option)
-                   .ok());
+  LinterResult result = CheckUppercaseKeywords(
+      "SeLEct * frOM emp wHEre b = a or c < d GROUP by x", option);
+  EXPECT_FALSE(result.ok());
+  auto errors = result.GetErrors();
+
+  EXPECT_EQ(errors.size(), 3);
+  EXPECT_EQ(errors[0].GetPosition(), std::make_pair(1, 1));
+  EXPECT_EQ(errors[1].GetPosition(), std::make_pair(1, 10));
+  EXPECT_EQ(errors[2].GetPosition(), std::make_pair(1, 19));
 }
 
 TEST(LinterTest, CommentTypeCheck) {
@@ -118,6 +126,13 @@ TEST(LinterTest, CommentTypeCheck) {
           "SELECT \"\"\"multiline\nstring--\nliteral\nhaving//--//\"\"\"",
           option)
           .ok());
+  LinterResult result = CheckCommentType(
+      "# comment 1\nSELECT 3+5\n--comment 2//fake 3\n--comment 4", option);
+  auto errors = result.GetErrors();
+
+  EXPECT_EQ(errors.size(), 2);
+  EXPECT_EQ(errors[0].GetPosition(), std::make_pair(3, 2));
+  EXPECT_EQ(errors[1].GetPosition(), std::make_pair(4, 2));
 }
 
 TEST(LinterTest, AliasKeywordCheck) {
@@ -126,6 +141,12 @@ TEST(LinterTest, AliasKeywordCheck) {
   EXPECT_TRUE(CheckAliasKeyword("SELECT * FROM emp AS X", option).ok());
   EXPECT_FALSE(CheckAliasKeyword("SELECT * FROM emp X", option).ok());
   EXPECT_TRUE(CheckAliasKeyword("SELECT 1 AS one", option).ok());
+
+  LinterResult result = CheckAliasKeyword("SELECT A B FROM C D", option);
+  auto errors = result.GetErrors();
+  EXPECT_EQ(errors.size(), 2);
+  EXPECT_EQ(errors[0].GetPosition(), std::make_pair(1, 10));
+  EXPECT_EQ(errors[1].GetPosition(), std::make_pair(1, 19));
 }
 
 TEST(LinterTest, TabCharactersUniformCheck) {
@@ -173,6 +194,35 @@ TEST(LinterTest, NoTabsBesidesIndentationsCheck) {
                   .GetErrors()
                   .back()
                   .GetPosition() == std::make_pair(2, 2));
+}
+
+TEST(LinterTest, CheckSingleQuotes) {
+  LinterOptions option;
+  EXPECT_TRUE(CheckSingleQuotes("SELECT 'a' \n SELECT 'b'", option).ok());
+  EXPECT_FALSE(CheckSingleQuotes("SELECT \"a\" \n SELECT \"b\"", option).ok());
+
+  EXPECT_TRUE(
+      CheckSingleQuotes("SELECT 'string with \" (ok)' from b", option).ok());
+  option.SetSingleQuote(false);
+  EXPECT_FALSE(CheckSingleQuotes("SELECT 'a' \n SELECT 'b'", option).ok());
+  EXPECT_TRUE(CheckSingleQuotes("SELECT \"a\" \n SELECT \"b\"", option).ok());
+  LinterResult result = CheckSingleQuotes("SELECT 'a' \n SELECT 'b'", option);
+  result.Sort();
+  std::vector<LintError> errors = result.GetErrors();
+
+  EXPECT_EQ(errors.size(), 2);
+  EXPECT_EQ(errors[0].GetPosition(), std::make_pair(1, 8));
+  EXPECT_EQ(errors[1].GetPosition(), std::make_pair(2, 9));
+}
+
+TEST(LinterTest, ParserDependentChecks) {
+  LinterOptions option;
+  for (auto check : GetParserDependentChecks()) {
+    // If there is no semicolon in between Parser fails and this check shouldn't
+    // give extra errors aside from Parser Check.
+    EXPECT_TRUE(check("SELECT 3+5\nSELECT 4+6;", option).GetErrors().empty());
+    EXPECT_TRUE(check("SELECT 3+5\nSELECT 4+6;", option).GetStatus().empty());
+  }
 }
 
 }  // namespace

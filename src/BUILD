@@ -20,6 +20,26 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_proto_library", "c
 licenses(["notice"])  # Apache v2.0
 
 cc_library(
+    name = "check_list",
+    srcs = [
+        "check_list.cc",
+    ],
+    hdrs = [
+        "check_list.h",
+    ],
+    copts = [
+        "-Wno-return-type",
+        "-Wno-sign-compare",
+        "-Wno-switch",
+    ],
+    deps = [
+        ":linter",
+        ":linter_options",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
+    ]
+)
+
+cc_library(
     name = "linter",
     srcs = [
         "linter.cc",
@@ -82,6 +102,7 @@ cc_library(
         ":lint_errors",
         ":linter",
         ":config",
+        ":check_list",
         "@com_google_zetasql//zetasql/public:parse_helpers",
         "@com_google_zetasql//zetasql/public/functions:like",
         "@com_googlesource_code_re2//:re2",

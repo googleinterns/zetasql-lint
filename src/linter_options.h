@@ -72,6 +72,14 @@ class LinterOptions {
     allowed_indent_ = allowed_indent;
   }
 
+  // Getter for single_quote_.
+  char SingleQuote() const { return single_quote_; }
+
+  // Setter for single_quote_.
+  void SetSingleQuote(char single_quote) {
+    single_quote_ = single_quote;
+  }
+
   // Changes if any lint is active from the start.
   void DisactivateCheck(ErrorCode code);
 
@@ -88,6 +96,9 @@ class LinterOptions {
   // Allowed character type of indentation. It should be either
   // '\t' or ' '.
   char allowed_indent_ = ' ';
+
+  // True if user should use single quotes, false for double quotes.
+  bool single_quote_ = true;
 
   // Whenever a lint check fails status message occurs. This variable
   // determines if status messages should be shown to the user.

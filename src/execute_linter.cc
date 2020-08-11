@@ -29,6 +29,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "re2/re2.h"
+#include "src/check_list.h"
 #include "src/config.pb.h"
 #include "src/lint_errors.h"
 #include "src/linter.h"
@@ -148,23 +149,10 @@ LinterOptions GetOptionsFromConfig(Config config) {
   return option;
 }
 
-CheckList GetAllChecks() {
-  CheckList list;
-  list.Add(CheckLineLength);
-  list.Add(CheckParserSucceeds);
-  list.Add(CheckSemicolon);
-  list.Add(CheckUppercaseKeywords);
-  list.Add(CheckCommentType);
-  list.Add(CheckAliasKeyword);
-  list.Add(CheckTabCharactersUniform);
-  list.Add(CheckNoTabsBesidesIndentations);
-  return list;
-}
-
 LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
   CheckList list = GetAllChecks();
   LinterResult result = ParseNoLintComments(sql, &options);
-
+  PrintASTTree(sql);
   for (auto check : list.GetList()) {
     result.Add(check(sql, options));
   }

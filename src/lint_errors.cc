@@ -51,7 +51,9 @@ std::map<std::string, ErrorCode> GetErrorMap() {
       {"consistent-comment-style", ErrorCode::kCommentStyle},
       {"alias", ErrorCode::kAlias},
       {"uniform-indent", ErrorCode::kUniformIndent},
-      {"not-indent-tab", ErrorCode::kNotIndentTab}};
+      {"not-indent-tab", ErrorCode::kNotIndentTab},
+      {"single-or-double-quote", ErrorCode::kSingleQuote},
+      {"naming", ErrorCode::kNaming}};
   return error_map;
 }
 std::string LintError::GetErrorMessage() { return message_; }

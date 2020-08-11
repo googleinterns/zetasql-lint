@@ -26,6 +26,7 @@
 #include "absl/strings/string_view.h"
 #include "src/lint_errors.h"
 #include "src/linter.h"
+#include "src/check_list.h"
 #include "src/linter_options.h"
 
 namespace zetasql::linter {
@@ -44,29 +45,6 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
 // The main purpose of this function is parsing single line comments
 // and getting(then combining) results from 'ParseNoLintSingleComment'
 LinterResult ParseNoLintComments(absl::string_view sql, LinterOptions* options);
-
-// It is the general list of the linter checks. It can be used to
-// verify if a place is controlling all of the checks and not missing any.
-class CheckList {
- public:
-  // Getter function for the list
-  const std::vector<
-      std::function<LinterResult(absl::string_view, const LinterOptions&)>>
-  GetList() {
-    return list_;
-  }
-
-  // Add a linter check to the list
-  void Add(std::function<LinterResult(absl::string_view, const LinterOptions&)>
-               check) {
-    list_.push_back(check);
-  }
-
- private:
-  std::vector<
-      std::function<LinterResult(absl::string_view, const LinterOptions&)>>
-      list_;
-};
 
 // This function is the main function to get all the checks.
 // Whenever a new check is added this should be

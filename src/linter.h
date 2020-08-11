@@ -115,6 +115,13 @@ LinterResult CheckTabCharactersUniform(absl::string_view sql,
 LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
                                             const LinterOptions &option);
 
+// Checks if single/double quote usage conflicts with configuration.
+LinterResult CheckSingleQuotes(absl::string_view sql,
+                               const LinterOptions &option);
+
+// Checks if any of naming conventions is not satisfied. Details of naming
+// convenstion can be found in docs/checks.md#naming
+LinterResult CheckNames(absl::string_view sql, const LinterOptions &option);
 }  // namespace zetasql::linter
 
 #endif  // SRC_LINTER_H_
