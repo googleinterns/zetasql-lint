@@ -11,7 +11,7 @@ Check names are listed as below:
 7. [uniform-indent](checks.md#uniform-indent)
 8. [not-indent-tab](checks.md#not-indent-tab)
 9. [single-or-double-quote](checks.md#single-or-double-quote)
-10. [naming](checks#naming)
+10. [naming](checks.md#naming)
 
 ## parser-failed
 Checks if ZetaSQL parser succeeds to parse your sql statements. 
