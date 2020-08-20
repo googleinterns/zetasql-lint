@@ -11,9 +11,15 @@ Check names are listed as below:
 7. [uniform-indent](checks.md#uniform-indent)
 8. [not-indent-tab](checks.md#not-indent-tab)
 9. [single-or-double-quote](checks.md#single-or-double-quote)
-10. [naming](checks.md#naming)
-11. [join](checks.md#join)
-12. [imports](checks.md#imports)
+10. [table-name](checks.md#naming)
+11. [window-name](checks.md#naming)
+13. [function-name](checks.md#naming)
+14. [data-type-name](checks.md#naming)
+15. [column-name](checks.md#naming)
+16. [parameter-name](checks.md#naming)
+17. [constant-name](checks.md#naming)
+18. [join](checks.md#join)
+19. [imports](checks.md#imports)
 
 ## parser-failed
 Checks if ZetaSQL parser succeeds to parse your sql statements. 
@@ -27,7 +33,7 @@ SELECT A FROM B C D;
 ```
 **Linter Output**
 ```
-In line 4, column 19: Syntax error: Expected end of input but got identifier "D"
+In line 4, column 19: Syntax error: Expected end of input but got identifier "D" [parser-failed]
 ```
 
 ## line-limit-exceed
@@ -40,7 +46,7 @@ SELECT *;
 ```
 **Linter Output**
 ```
-In line 1, column 101: Lines should be <= 100 characters long
+In line 1, column 101: Lines should be <= 100 characters long [line-limit-exceed]
 ```
 
 ## statement-semicolon
@@ -55,7 +61,7 @@ SELECT A FROM B
 ```
 **Linter Output**
 ```
-In line 4, column 16: Each statement should end with a semicolon ';'
+In line 4, column 16: Each statement should end with a semicolon ';' [statement-semicolon]
 ```
 ## consistent-letter-case
 Checks if every keyword, either all uppercase or all lowercase.
@@ -71,7 +77,7 @@ SELECT A From B;
 ```
 **Linter Output**
 ```
-In line 6, column 10: All keywords should be either uppercase or lowercase
+In line 6, column 10: All keywords should be either uppercase or lowercase [consistent-letter-case]
 ```
 ## consistent-comment-style
 ZetaSQL linter supports different kind of comment styles ('#', '//', or '--'). Only one of them should be used consistently,
@@ -86,8 +92,8 @@ SELECT *;
 
 **Linter Output**
 ```
-In line 3, column 1: One line comments should be consistent, expected: --, found: #
-In line 4, column 1: One line comments should be consistent, expected: --, found: #
+In line 3, column 1: One line comments should be consistent, expected: --, found: # [consistent-comment-style]
+In line 4, column 1: One line comments should be consistent, expected: --, found: # [consistent-comment-style]
 ```
 ## alias
 Every alias should use keyword 'AS'. 
@@ -103,7 +109,7 @@ SELECT A a;
 
 **Linter Output**
 ```
-In line 5, column 10: Always use AS keyword before aliases
+In line 5, column 10: Always use AS keyword before aliases [alias]
 ```
 ## uniform-indent
 Indentation character should be uniform. Generally, either tabs or spaces are used. It is configurable with variable [allowed_indent](config.md#config). By default, spaces are expected to be used as the indentation character.
@@ -124,7 +130,7 @@ FROM B;
 
 **Linter Output**
 ```
-In line 9, column 1: Inconsistent use of indentation symbols, expected: whitespace
+In line 9, column 1: Inconsistent use of indentation symbols, expected: whitespace [uniform-indent]
 ```
 
 ## not-indent-tab
@@ -144,7 +150,7 @@ SELECT 	A FROM B;
 
 **Linter Output**
 ```
-In line 8, column 8: Tab is not in the indentation
+In line 8, column 8: Tab is not in the indentation [not-indent-tab]
 ```
 
 
@@ -162,7 +168,7 @@ SELECT "a" FROM TableName;
 
 **Linter Output**
 ```
-In line 5, column 8: Use single quotes(') instead of double quotes(")
+In line 5, column 8: Use single quotes(') instead of double quotes(") [single-or-double-quote]
 ```
 
 **Example 2**
@@ -183,22 +189,22 @@ message Config {
 
 **Linter Output 2**
 ```
-In line 2, column 8: Use double quotes(") instead of single quotes(')
+In line 2, column 8: Use double quotes(") instead of single quotes(') [single-or-double-quote]
 ```
 
 
 ## naming
 In a sql file each name should follow a specific convention.
 
-| Type | Recommendation |
+| Type | Check Names | Recommendation |
 |--------|----------------------------------------|
-|Table Names| UpperCamelCase, e.g. `CREATE TABLE MyTable`|
-|Window Names| UpperCamelCase, e.g. `OrderedCategory` |
-|Built-In SQL Data Types|All caps, e.g. `BOOL`, `STRING`, `INT64`|
-|User-Defined Functions|UpperCamelCase, e.g. `CREATE PUBLIC FUNCTION MyFunction`|
-|User-Defined Function Parameters|snake_case, e.g. `my_param`|
-|User-Defined Constants|CAPS_SNAKE_CASE, e.g. `CREATE PUBLIC CONSTANT TWO_PI = 6.28`|
-|Column Names|snake_case, e.g. `SELECT MyTable.my_rowkey AS account_id`|
+|Table Names|table-name| UpperCamelCase, e.g. `CREATE TABLE MyTable`|
+|Window Names|window-name| UpperCamelCase, e.g. `OrderedCategory` |
+|User-Defined Functions|function-name|UpperCamelCase, e.g. `CREATE PUBLIC FUNCTION MyFunction`|
+|Built-In SQL Data Types|data-type-name|All caps, e.g. `BOOL`, `STRING`, `INT64`|
+|Column Names|column-name|snake_case, e.g. `SELECT MyTable.my_rowkey` or UpperCamelCase|
+|User-Defined Function Parameters|parameter-name|snake_case, e.g. `my_param`|
+|User-Defined Constants|constant-name|CAPS_SNAKE_CASE, e.g. `CREATE PUBLIC CONSTANT TWO_PI = 6.28`|
 
 
 **Example**
@@ -236,19 +242,19 @@ CREATE PUBLIC CONSTANT TWO_PI = 6.28; -- True, line 29
 
 **Linter Output**
 ```
-In line 1, column 14: Table names or table aliases should be UpperCamelCase.
-In line 3, column 14: Table names or table aliases should be UpperCamelCase.
-In line 6, column 24: Window names should be UpperCamelCase.
-In line 9, column 28: Function names should be UpperCamelCase.
-In line 10, column 28: Function names should be UpperCamelCase.
-In line 13, column 27: Simple SQL data types should be all caps.
-In line 15, column 27: Simple SQL data types should be all caps.
-In line 20, column 8: Column names should be lower_snake_case.
-In line 21, column 8: Column names should be lower_snake_case.
-In line 24, column 30: Function parameters should be lower_snake_case.
-In line 25, column 30: Function parameters should be lower_snake_case.
-In line 26, column 30: Function parameters should be lower_snake_case.
-In line 28, column 24: Constant names should be CAPS_SNAKE_CASE.
+In line 1, column 14: Table names or table aliases should be UpperCamelCase. [table-name]
+In line 3, column 14: Table names or table aliases should be UpperCamelCase. [table-name]
+In line 6, column 24: Window names should be UpperCamelCase. [window-name]
+In line 9, column 28: Function names should be UpperCamelCase. [function-name]
+In line 10, column 28: Function names should be UpperCamelCase. [function-name]
+In line 13, column 27: Simple SQL data types should be all caps. [data-type-name]
+In line 15, column 27: Simple SQL data types should be all caps. [data-type-name]
+In line 20, column 8: Column names should be lower_snake_case. [column-name]
+In line 21, column 8: Column names should be lower_snake_case. [column-name]
+In line 24, column 30: Function parameters should be lower_snake_case. [parameter-name]
+In line 25, column 30: Function parameters should be lower_snake_case. [parameter-name]
+In line 26, column 30: Function parameters should be lower_snake_case. [parameter-name]
+In line 28, column 24: Constant names should be CAPS_SNAKE_CASE. [constant-name]
 ```
 
 ## join
@@ -268,10 +274,10 @@ SELECT a FROM (t JOIN x); -- line 7
 
 **Linter Output**
 ```
-In line 7, column 18: Always explicitly indicate the type of join.
+In line 7, column 18: Always explicitly indicate the type of join. [join]
 ```
 
-## imports.
+## imports
 Imports should be on the top. 
 There shouldn't be any redundant(dublicate) imports.
 All 'PROTO' imports and all 'MODULE' imports should group among themselves, there shouldn't mixed order like (MODULE-PROTO-MODULE) or (PROTO-MODULE-PROTO)
@@ -285,8 +291,8 @@ IMPORT MODULE random; -- Here is a duplicate order, which also is in the wrong p
 
 **Linter Output**
 ```
-In line 3, column 14: PROTO and MODULE inputs should be in seperate groups.
-In line 3, column 21: "random" is already defined.
+In line 3, column 14: PROTO and MODULE inputs should be in seperate groups. [imports]
+In line 3, column 21: "random" is already defined. [imports]
 ```
 
 

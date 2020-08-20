@@ -141,8 +141,9 @@ std::string GetNextWord(absl::string_view sql, int *position) {
   int &i = *position;
   while (i < sql.size() && (sql[i] == ' ' || sql[i] == '\t')) i++;
   std::string word = "";
-  while (i < sql.size() && !(sql[i] == ' ' || sql[i] == '\t' ||
-                             sql[i] == '\n' || sql[i] == ';')) {
+  while (i < sql.size() &&
+         !(sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n' || sql[i] == ';' ||
+           sql[i] == '(' || sql[i] == ',')) {
     word += sql[i];
     i++;
   }
@@ -214,6 +215,7 @@ bool ConsistentUppercaseLowercase(const absl::string_view &sql,
   // contains both uppercase and lowercase characters
   return !(lowercase && uppercase);
 }
+
 LinterResult ASTNodeRule::ApplyTo(absl::string_view sql,
                                   const LinterOptions &option) {
   RuleVisitor visitor(rule_, sql, option);

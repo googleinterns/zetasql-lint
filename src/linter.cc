@@ -303,21 +303,21 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
 
              if (kind == AST_CREATE_TABLE_STATEMENT) {
                if (!IsUpperCamelCase(name) &&
-                   option.IsActive(ErrorCode::kNaming, position))
-                 result.Add(ErrorCode::kNaming, sql, position,
+                   option.IsActive(ErrorCode::kTableName, position))
+                 result.Add(ErrorCode::kTableName, sql, position,
                             "Table names or"
                             " table aliases should be UpperCamelCase.");
 
              } else if (kind == AST_WINDOW_CLAUSE) {
                if (!IsUpperCamelCase(name) &&
-                   option.IsActive(ErrorCode::kNaming, position))
-                 result.Add(ErrorCode::kNaming, sql, position,
+                   option.IsActive(ErrorCode::kWindowName, position))
+                 result.Add(ErrorCode::kWindowName, sql, position,
                             "Window names should be UpperCamelCase.");
 
              } else if (kind == AST_FUNCTION_DECLARATION) {
                if (!IsUpperCamelCase(name) &&
-                   option.IsActive(ErrorCode::kNaming, position))
-                 result.Add(ErrorCode::kNaming, sql, position,
+                   option.IsActive(ErrorCode::kFunctionName, position))
+                 result.Add(ErrorCode::kFunctionName, sql, position,
                             "Function names should be UpperCamelCase.");
 
              } else if (kind == AST_SIMPLE_TYPE) {
@@ -330,26 +330,26 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
                  return result;
 
                if (!IsAllCaps(name) &&
-                   option.IsActive(ErrorCode::kNaming, position))
-                 result.Add(ErrorCode::kNaming, sql, position,
+                   option.IsActive(ErrorCode::kDataTypeName, position))
+                 result.Add(ErrorCode::kDataTypeName, sql, position,
                             "Simple SQL data types should be all caps.");
 
              } else if (kind == AST_SELECT_COLUMN) {
                if (!IsLowerSnakeCase(name) && !IsLowerCamelCase(name) &&
-                   option.IsActive(ErrorCode::kNaming, position))
-                 result.Add(ErrorCode::kNaming, sql, position,
+                   option.IsActive(ErrorCode::kColumnName, position))
+                 result.Add(ErrorCode::kColumnName, sql, position,
                             "Column names should be lower_snake_case.");
 
              } else if (kind == AST_FUNCTION_PARAMETERS) {
                if (!IsLowerSnakeCase(name) &&
-                   option.IsActive(ErrorCode::kNaming, position))
-                 result.Add(ErrorCode::kNaming, sql, position,
+                   option.IsActive(ErrorCode::kParameterName, position))
+                 result.Add(ErrorCode::kParameterName, sql, position,
                             "Function parameters should be lower_snake_case.");
 
              } else if (kind == AST_CREATE_CONSTANT_STATEMENT) {
                if (!IsCapsSnakeCase(name) &&
-                   option.IsActive(ErrorCode::kNaming, position))
-                 result.Add(ErrorCode::kNaming, sql, position,
+                   option.IsActive(ErrorCode::kConstantName, position))
+                 result.Add(ErrorCode::kConstantName, sql, position,
                             "Constant names should be CAPS_SNAKE_CASE.");
              }
            }

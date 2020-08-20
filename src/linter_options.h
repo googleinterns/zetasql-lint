@@ -46,12 +46,12 @@ class LinterOptions {
 
   // Disables linter check after <position>.
   // Enabling/Disabling positions should always come in
-  // increasing order.
+  // INCREASING order.
   void Disable(ErrorCode code, int position);
 
   // Enables linter check after <position>.
   // Enabling/Disabling positions should always come in
-  // increasing order.
+  // INCREASING order.
   void Enable(ErrorCode code, int position);
 
   // Getter for tab_size_.

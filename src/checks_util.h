@@ -123,7 +123,8 @@ bool IgnoreComments(absl::string_view sql, const LinterOptions option,
 bool IgnoreStrings(absl::string_view sql, int *position);
 
 // Given a position in a sql file, returns first word comes
-// after that positon. Words are seperated by ' ' charater.
+// after that positon. The seperator characters in a sql file will be :
+// ( ' ', '\t', '\n', ';', ',', '(' ).
 std::string GetNextWord(absl::string_view sql, int *position);
 
 // Prints AST tree of an sql statement.

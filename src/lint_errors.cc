@@ -54,7 +54,13 @@ std::map<std::string, ErrorCode> GetErrorMap() {
       {"uniform-indent", ErrorCode::kUniformIndent},
       {"not-indent-tab", ErrorCode::kNotIndentTab},
       {"single-or-double-quote", ErrorCode::kSingleQuote},
-      {"naming", ErrorCode::kNaming},
+      {"table-name", ErrorCode::kTableName},
+      {"window-name", ErrorCode::kWindowName},
+      {"function-name", ErrorCode::kFunctionName},
+      {"data-type-name", ErrorCode::kDataTypeName},
+      {"column-name", ErrorCode::kColumnName},
+      {"parameter-name", ErrorCode::kParameterName},
+      {"constant-name", ErrorCode::kConstantName},
       {"join", ErrorCode::kJoin},
       {"imports", ErrorCode::kImport},
       {"status", ErrorCode::kStatus}};
@@ -84,11 +90,6 @@ void LintError::PrintError() {
               << GetErrorMessage() << " [" << ErrorCodeToString() << "]"
               << std::endl;
   }
-}
-
-std::string ConstructPositionMessage(ErrorLocation location) {
-  return absl::StrCat("In line ", location.line(), ", column ",
-                      location.column(), ": ");
 }
 
 void LinterResult::PrintResult() {

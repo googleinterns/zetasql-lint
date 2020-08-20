@@ -124,7 +124,6 @@ LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename) {
       option.DisactivateCheck(error_map[check_name]);
     }
   }
-
   return option;
 }
 

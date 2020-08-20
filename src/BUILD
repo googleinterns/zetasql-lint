@@ -119,6 +119,23 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "config",
+    deps = [":config_cc_proto"],
+)
+
+cc_proto_library(
+    name = "config_cc_proto",
+    deps = [":config_proto"],
+)
+
+proto_library(
+    name = "config_proto",
+    srcs = ["config.proto"],
+)
+
+# ---------------------------- Binary
+
 cc_binary(
     name = "runner",
     srcs = [
@@ -136,6 +153,8 @@ cc_binary(
         "@com_google_absl//absl/flags:parse",
     ],
 )
+
+# ---------------------------- TEST
 
 cc_test(
     name = "linter_test",
@@ -174,19 +193,4 @@ cc_test(
         "@com_google_googletest//:gtest_main",
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
-)
-
-cc_library(
-    name = "config",
-    deps = [":config_cc_proto"],
-)
-
-cc_proto_library(
-    name = "config_cc_proto",
-    deps = [":config_proto"],
-)
-
-proto_library(
-    name = "config_proto",
-    srcs = ["config.proto"],
 )

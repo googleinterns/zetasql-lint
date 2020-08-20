@@ -79,10 +79,11 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option);
 // Checks if any of Join statement has missing indicator(LEFT, INNER, etc.)
 LinterResult CheckJoin(absl::string_view sql, const LinterOptions &option);
 
-//
+// Checks if PROTO imports and MODULE imports are consequtive among themselves.
+// Also checks if there is a dublicate import.
 LinterResult CheckImports(absl::string_view sql, const LinterOptions &option);
 
-// Checks if any
+// Checks if any complex expression is without parantheses.
 LinterResult CheckExpressionParantheses(absl::string_view sql,
                                         const LinterOptions &option);
 }  // namespace zetasql::linter

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <google/protobuf/text_format.h>
 #include <cctype>
 #include <fstream>
 #include <iostream>
@@ -33,16 +34,86 @@
 ABSL_FLAG(std::string, config, "",
           "A prototxt file having configuration options.");
 
-ABSL_FLAG(bool, quick, false, "This flag will read from standart input.");
+ABSL_FLAG(bool, quick, false,
+          "This flag will read from standart input. It will read one statement "
+          "and continue until reading semicolon ';'");
 
 namespace zetasql::linter {
 namespace {
 
-Config ReadFromConfigFile(std::string filename) {
+std::string ReadFile(const char* filename) {
+  std::ifstream file(filename);
+  std::string str = "";
+  for (std::string line; std::getline(file, line);) {
+    str += line + "\n";
+  }
+  return str;
+}
+
+Config ReadFromConfigFile(const char* filename) {
   Config config;
-  // TODO(orhanuysal): Add prototxt parser here. Expected something
-  // like: config = google::protobuf::ParseFromPrototxt(filename);
+  std::string str = ReadFile(filename);
+  if (!google::protobuf::TextFormat::ParseFromString(str, &config)) {
+    std::cerr << "Configuration file couldn't be parsed." << std::endl;
+    config = Config();
+  }
   return config;
+}
+
+bool HasValidExtension(char* filename) {
+  std::vector<std::string> supported_extensions{".sql", ".sqlm", ".sqlp",
+                                                ".sqlt", ".gsql"};
+
+  std::string extension_str = absl::StrJoin(supported_extensions.begin(),
+                                            supported_extensions.end(), ", ");
+
+  bool ok = false;
+  std::string extension;
+  for (int i = std::strlen(filename) - 1; i >= 0 && filename[i] != '.'; i--)
+    extension = filename[i] + extension;
+  extension = '.' + extension;
+  for (std::string supported_extension : supported_extensions)
+    if (supported_extension == extension) ok = true;
+  if (!ok) {
+    std::cerr << "Ignoring " << filename << ";  not have a valid extension ("
+              << extension_str << ")" << std::endl;
+    return 0;
+  }
+  return 1;
+}
+
+void quick_run(Config config) {
+  std::string str = "";
+  for (std::string line; std::getline(std::cin, line);) {
+    bool end = false;
+    for (char c : line) {
+      str += c;
+      if (c == ';') {
+        end = true;
+        break;
+      }
+    }
+    str += "\n";
+  }
+  zetasql::linter::LinterResult result =
+      zetasql::linter::RunChecks(absl::string_view(str), config, "");
+
+  result.PrintResult();
+}
+
+void run(std::vector<char*> sql_files, Config config) {
+  bool runner = true;
+  for (char* filename : sql_files) {
+    // The first argument is './runner'.
+    if (runner || !HasValidExtension(filename)) {
+      runner = false;
+      continue;
+    }
+    std::string str = ReadFile(filename);
+    LinterResult result = RunChecks(absl::string_view(str), config, filename);
+
+    result.PrintResult();
+  }
 }
 
 }  // namespace
@@ -50,7 +121,7 @@ Config ReadFromConfigFile(std::string filename) {
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cout << "Usage: ./runner --config=<config_file> <file_names>\n"
+    std::cerr << "Usage: ./runner --config=<config_file> <file_names>\n"
               << std::endl;
     return 1;
   }
@@ -59,66 +130,14 @@ int main(int argc, char* argv[]) {
 
   std::string config_file = absl::GetFlag(FLAGS_config);
   bool quick = absl::GetFlag(FLAGS_quick);
+
   zetasql::linter::Config config =
-      zetasql::linter::ReadFromConfigFile(config_file);
+      zetasql::linter::ReadFromConfigFile(config_file.c_str());
 
-  if (quick) {
-    std::string str = "";
-    for (std::string line; std::getline(std::cin, line);) {
-      bool end = false;
-      for (char c : line) {
-        str += c;
-        if (c == ';') {
-          end = true;
-          break;
-        }
-      }
-      str += "\n";
-    }
-    zetasql::linter::LinterResult result =
-        zetasql::linter::RunChecks(absl::string_view(str), config, "");
-
-    result.PrintResult();
-    return 0;
-  }
-
-  std::vector<std::string> supported_extensions{".sql", ".sqlm", ".sqlp",
-                                                ".sqlt", ".gsql"};
-
-  std::string extension_str = absl::StrJoin(supported_extensions.begin(),
-                                            supported_extensions.end(), ", ");
-
-  bool runner = true;
-  for (char* filename : sql_files) {
-    // The first argument is 'runner'.
-    if (runner) {
-      runner = false;
-      continue;
-    }
-    bool ok = false;
-    std::string extension;
-    for (int i = std::strlen(filename) - 1; i >= 0 && filename[i] != '.'; i--)
-      extension = filename[i] + extension;
-    extension = '.' + extension;
-    for (std::string supported_extension : supported_extensions)
-      if (supported_extension == extension) ok = true;
-    if (!ok) {
-      std::cerr << "Ignoring " << filename << ";  not have a valid extension ("
-                << extension_str << ")" << std::endl;
-      continue;
-    }
-    std::ifstream file(filename);
-    std::string str = "";
-    for (std::string line; std::getline(file, line);) {
-      str += line + "\n";
-    }
-    // zetasql::linter::PrintASTTree(str);
-
-    zetasql::linter::LinterResult result =
-        zetasql::linter::RunChecks(absl::string_view(str), config, filename);
-
-    result.PrintResult();
-  }
+  if (quick)
+    zetasql::linter::quick_run(config);
+  else
+    zetasql::linter::run(sql_files, config);
 
   return 0;
 }
