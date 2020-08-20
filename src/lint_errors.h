@@ -49,7 +49,9 @@ enum class ErrorCode : int {
   kConstantName,
   kStatus,
   kNoLint,
-  COUNT,
+  COUNT,  // This is not a real ErrorCode, It is for checking if every ErrorCode
+          // has a string. This should always at the end and no new check should
+          // have an assigned value.
 };
 
 std::ostream& operator<<(std::ostream& os, const ErrorCode& obj);
