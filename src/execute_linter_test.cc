@@ -34,7 +34,7 @@ namespace {
 
 TEST(CheckListTest, SizeMatch) {
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
-  EXPECT_TRUE(error_map.size() == static_cast<int>(ErrorCode::COUNT));
+  EXPECT_EQ(error_map.size(), static_cast<int>(ErrorCode::COUNT));
 }
 
 TEST(NolintTest, MultipleDisabling) {
