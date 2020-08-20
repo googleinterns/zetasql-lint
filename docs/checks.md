@@ -12,6 +12,8 @@ Check names are listed as below:
 8. [not-indent-tab](checks.md#not-indent-tab)
 9. [single-or-double-quote](checks.md#single-or-double-quote)
 10. [naming](checks.md#naming)
+11. [join](checks.md#join)
+12. [imports](checks.md#imports)
 
 ## parser-failed
 Checks if ZetaSQL parser succeeds to parse your sql statements. 
@@ -247,6 +249,44 @@ In line 24, column 30: Function parameters should be lower_snake_case.
 In line 25, column 30: Function parameters should be lower_snake_case.
 In line 26, column 30: Function parameters should be lower_snake_case.
 In line 28, column 24: Constant names should be CAPS_SNAKE_CASE.
+```
+
+## join
+Always explicitly indicate the type of join. Do not use just "JOIN", try to indicate the type like "INNER", "LEFT", etc.
+
+**Example**
+```sql
+-- Here is some valid JOIN usage.
+SELECT a FROM (t INNER JOIN x);
+SELECT a FROM (t LEFT JOIN x);
+SELECT a FROM (t RIGHT OUTER JOIN x);
+
+-- and also an invalid one.
+SELECT a FROM (t JOIN x); -- line 7
+
+```
+
+**Linter Output**
+```
+In line 7, column 18: Always explicitly indicate the type of join.
+```
+
+## imports.
+Imports should be on the top. 
+There shouldn't be any redundant(dublicate) imports.
+All 'PROTO' imports and all 'MODULE' imports should group among themselves, there shouldn't mixed order like (MODULE-PROTO-MODULE) or (PROTO-MODULE-PROTO)
+
+**Example**
+```sql
+IMPORT MODULE random;
+IMPORT PROTO 'random.proto';
+IMPORT MODULE random; -- Here is a duplicate order, which also is in the wrong place.
+```
+
+**Linter Output**
+```
+In line 3, column 14: PROTO and MODULE inputs should be in seperate groups.
+In line 3, column 21: "random" is already defined.
 ```
 
 
