@@ -53,7 +53,8 @@ std::map<std::string, ErrorCode> GetErrorMap() {
       {"uniform-indent", ErrorCode::kUniformIndent},
       {"not-indent-tab", ErrorCode::kNotIndentTab},
       {"single-or-double-quote", ErrorCode::kSingleQuote},
-      {"naming", ErrorCode::kNaming}};
+      {"naming", ErrorCode::kNaming},
+      {"join", ErrorCode::kJoin}};
   return error_map;
 }
 std::string LintError::GetErrorMessage() { return message_; }
@@ -87,15 +88,18 @@ void LinterResult::PrintResult() {
                 << std::endl;
     }
   }
-
-  std::cout << "Linter results are printed" << std::endl;
+  if (filename_ == "") {
+    std::cout << "Linter results are printed" << std::endl;
+  } else {
+    std::cout << "Linter is done processing file: " << filename_ << std::endl;
+  }
 }
 
 LinterResult::LinterResult(const absl::Status& status) {
   if (!status.ok()) status_.push_back(status);
 }
 
-absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
+absl::Status LinterResult::Add(absl::string_view filename, ErrorCode type,
                                absl::string_view sql, int character_location,
                                std::string message) {
   ParseLocationPoint lp =
@@ -110,7 +114,7 @@ absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
 
 void LinterResult::Add(ErrorCode type, absl::string_view sql,
                        int character_location, std::string message) {
-  Add(type, "", sql, character_location, message);
+  Add(filename_, type, sql, character_location, message);
 }
 
 void LinterResult::Add(LinterResult result) {

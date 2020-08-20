@@ -33,7 +33,7 @@ namespace {
 
 TEST(LinterTest, StatementLineLengthCheck) {
   absl::string_view sql =
-      "SELECT e, sum(f) FROM emp where b = a or c < d group by x";
+      "SELECT e, sum(f) FROM emp where b = a or c < d group by x\n";
   absl::string_view multiline_sql =
       "SELECT c\n"
       "some long invalid sql statement that shouldn't stop check\n"
@@ -283,6 +283,44 @@ TEST(LinterTest, ParserDependentChecks) {
     EXPECT_TRUE(check("SELECT 3+5\nSELECT 4+6;", option).GetErrors().empty());
     EXPECT_TRUE(check("SELECT 3+5\nSELECT 4+6;", option).GetStatus().empty());
   }
+}
+
+TEST(LinterTest, CheckJoin) {
+  LinterOptions option;
+  LinterResult result =
+      CheckJoin("SELECT a FROM t JOIN x JOIN y JOIN z", option);
+  EXPECT_FALSE(result.ok());
+  EXPECT_EQ(result.GetErrors().size(), 3);
+
+  result = CheckJoin("SELECT a FROM t INNER JOIN x LEFT JOIN y RIGHT JOIN z",
+                     option);
+  EXPECT_TRUE(result.ok());
+
+  result = CheckJoin("SELECT a FROM t LEFT OUTER JOIN x", option);
+  EXPECT_TRUE(result.ok());
+}
+
+TEST(LinterTest, CheckImports) {
+  LinterOptions option;
+
+  EXPECT_TRUE(CheckImports("IMPORT PROTO 'random';\n", option).ok());
+  EXPECT_TRUE(CheckImports("IMPORT MODULE random;\n", option).ok());
+
+  absl::string_view sql =
+      "IMPORT PROTO 'random';\n"
+      "IMPORT MODULE random;\n"
+      "IMPORT PROTO 'CONFIG';\n";
+  LinterResult result = CheckImports(sql, option);
+  EXPECT_FALSE(result.ok());
+  EXPECT_EQ(result.GetErrors().size(), 1);
+  EXPECT_EQ(result.GetErrors()[0].GetErrorMessage(),
+            "PROTO and MODULE inputs should be in seperate groups.");
+
+  result = CheckImports("IMPORT random", option);
+  EXPECT_FALSE(result.ok());
+  EXPECT_EQ(result.GetErrors().size(), 1);
+  EXPECT_EQ(result.GetErrors()[0].GetErrorMessage(),
+            "Imports should specify the type 'MODULE' or 'PROTO'.");
 }
 
 }  // namespace

@@ -83,31 +83,8 @@ LinterResult ParseNoLintComments(absl::string_view sql,
                                  LinterOptions* options) {
   LinterResult result;
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
-    if (sql[i] == '\'' || sql[i] == '"') {
-      // The sql is inside string. This will ignore sql part until
-      // the same type(' or ") of character will occur
-      // without \ in the beginning. For example 'a"b' is a valid string.
-      for (int j = i + 1; j < static_cast<int>(sql.size()); ++j) {
-        if (sql[j - 1] == '\\' && sql[j] == sql[i]) continue;
-        if (sql[j] == sql[i] || j + 1 == static_cast<int>(sql.size())) {
-          i = j;
-          break;
-        }
-      }
-      continue;
-    }
-
-    // Ignore multiline comments.
-    if (i > 0 && sql[i - 1] == '/' && sql[i] == '*') {
-      // It will start checking after '/*' and after the iteration
-      // finished, the pointer 'i' will be just after '*/' (incrementation
-      // from the for statement is included).
-      i += 2;
-      while (i < static_cast<int>(sql.size()) &&
-             !(sql[i - 1] == '*' && sql[i] == '/')) {
-        ++i;
-      }
-    }
+    if (IgnoreComments(sql, *options, &i, false)) continue;
+    if (IgnoreStrings(sql, &i)) continue;
 
     bool is_line_comment = false;
     if (i > 0 && sql[i - 1] == '-' && sql[i] == '-') is_line_comment = true;
@@ -127,16 +104,18 @@ LinterResult ParseNoLintComments(absl::string_view sql,
   return result;
 }
 
-LinterOptions GetOptionsFromConfig(Config config) {
-  LinterOptions option;
+LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename) {
+  LinterOptions option(filename);
   if (config.has_tab_size()) option.SetTabSize(config.tab_size());
 
-  if (config.has_end_line()) option.SetLineDelimeter(config.end_line());
+  if (config.has_end_line()) option.SetLineDelimeter(config.end_line()[0]);
 
   if (config.has_line_limit()) option.SetLineLimit(config.line_limit());
 
+  if (config.has_single_quote()) option.SetSingleQuote(config.single_quote());
+
   if (config.has_allowed_indent())
-    option.SetAllowedIndent(config.allowed_indent());
+    option.SetAllowedIndent(config.allowed_indent()[0]);
 
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
@@ -152,14 +131,21 @@ LinterOptions GetOptionsFromConfig(Config config) {
 LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
   CheckList list = GetAllChecks();
   LinterResult result = ParseNoLintComments(sql, &options);
+  result.SetFilename(options.Filename());
   for (auto check : list.GetList()) {
     result.Add(check(sql, options));
   }
   return result;
 }
 
-LinterResult RunChecks(absl::string_view sql, Config config) {
-  LinterOptions options = GetOptionsFromConfig(config);
+LinterResult RunChecks(absl::string_view sql, Config config,
+                       absl::string_view filename) {
+  LinterOptions options = GetOptionsFromConfig(config, filename);
+  return RunChecks(sql, options);
+}
+
+LinterResult RunChecks(absl::string_view sql, absl::string_view filename) {
+  LinterOptions options(filename);
   return RunChecks(sql, options);
 }
 

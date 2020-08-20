@@ -15,15 +15,30 @@
 //
 #include "src/check_list.h"
 
+#include "absl/strings/string_view.h"
 #include "src/linter.h"
+#include "src/linter_options.h"
 
 namespace zetasql::linter {
+
+const std::vector<
+    std::function<LinterResult(absl::string_view, const LinterOptions&)>>
+CheckList::GetList() {
+  return list_;
+}
+
+void CheckList::Add(
+    std::function<LinterResult(absl::string_view, const LinterOptions&)>
+        check) {
+  list_.push_back(check);
+}
 
 CheckList GetParserDependantChecks() {
   CheckList list;
   list.Add(CheckSemicolon);
   list.Add(CheckAliasKeyword);
   list.Add(CheckNames);
+  list.Add(CheckJoin);
   return list;
 }
 
@@ -39,6 +54,7 @@ CheckList GetAllChecks() {
   list.Add(CheckNoTabsBesidesIndentations);
   list.Add(CheckSingleQuotes);
   list.Add(CheckNames);
+  list.Add(CheckJoin);
   return list;
 }
 

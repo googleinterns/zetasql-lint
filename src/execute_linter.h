@@ -25,6 +25,7 @@
 
 #include "absl/strings/string_view.h"
 #include "src/check_list.h"
+#include "src/config.pb.h"
 #include "src/lint_errors.h"
 #include "src/linter.h"
 #include "src/linter_options.h"
@@ -53,12 +54,19 @@ CheckList GetAllChecks();
 
 // This function gets LinterOptions from a specified
 // configuration file.
-LinterOptions GetOptionsFromConfig();
+LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename);
 
-// It runs all specified checks
-LinterResult RunChecks(absl::string_view sql, LinterOptions);
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, LinterOptions option);
 
-// It runs all specified checks
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, Config config,
+                       absl::string_view filename);
+
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, absl::string_view filename);
+
+// It runs all linter checks
 LinterResult RunChecks(absl::string_view sql);
 
 }  // namespace zetasql::linter

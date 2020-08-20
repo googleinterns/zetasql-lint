@@ -30,6 +30,16 @@ class LinterOptions {
   class CheckOptions;
 
  public:
+  LinterOptions() {}
+
+  explicit LinterOptions(absl::string_view filename) : filename_(filename) {}
+
+  // Setter for filename_.
+  void SetFilename(absl::string_view filename) { filename_ = filename; }
+
+  // Getter for filename_.
+  absl::string_view Filename() { return filename_; }
+
   // Returns if the linter check should be active
   // in <position>.
   bool IsActive(ErrorCode code, int position) const;
@@ -54,7 +64,7 @@ class LinterOptions {
   int LineDelimeter() const { return line_delimeter_; }
 
   // Setter for line_delimeter_.
-  void SetLineDelimeter(int line_delimeter) {
+  void SetLineDelimeter(char line_delimeter) {
     line_delimeter_ = line_delimeter;
   }
 
@@ -105,6 +115,9 @@ class LinterOptions {
   // For each ErrorCode that correspond to a check, it stores
   // options for that check.
   std::map<ErrorCode, CheckOptions> option_map_;
+
+  // Name of the sql file.
+  absl::string_view filename_ = "";
 
   // This class is options specified for a check.
   class CheckOptions {

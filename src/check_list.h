@@ -36,15 +36,11 @@ class CheckList {
   // Getter function for the list
   const std::vector<
       std::function<LinterResult(absl::string_view, const LinterOptions&)>>
-  GetList() {
-    return list_;
-  }
+  GetList();
 
   // Add a linter check to the list
   void Add(std::function<LinterResult(absl::string_view, const LinterOptions&)>
-               check) {
-    list_.push_back(check);
-  }
+               check);
 
  private:
   std::vector<

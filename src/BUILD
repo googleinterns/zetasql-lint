@@ -47,12 +47,8 @@ cc_library(
     hdrs = [
         "linter.h",
     ],
-    copts = [
-        "-Wno-return-type",
-        "-Wno-sign-compare",
-        "-Wno-switch",
-    ],
     deps = [
+        ":checks_util",
         ":lint_errors",
         ":linter_options",
         "@com_google_zetasql//zetasql/public:parse_helpers",
@@ -104,8 +100,22 @@ cc_library(
         ":lint_errors",
         ":linter",
         "@com_google_zetasql//zetasql/public:parse_helpers",
-        "@com_google_zetasql//zetasql/public/functions:like",
         "@com_googlesource_code_re2//:re2",
+    ],
+)
+
+cc_library(
+    name = "checks_util",
+    srcs = [
+        "checks_util.cc",
+    ],
+    hdrs = [
+        "checks_util.h",
+    ],
+    deps = [
+        ":lint_errors",
+        ":linter_options",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
 )
 
@@ -120,8 +130,10 @@ cc_binary(
         "-Wno-switch",
     ],
     deps = [
+        ":config",
         ":execute_linter",
-        "@com_googlesource_code_re2//:re2",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
     ],
 )
 
@@ -147,6 +159,18 @@ cc_test(
         ":execute_linter",
         ":lint_errors",
         ":linter_options",
+        "@com_google_googletest//:gtest_main",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
+    ],
+)
+
+cc_test(
+    name = "checks_util_test",
+    size = "small",
+    srcs = ["checks_util_test.cc"],
+    deps = [
+        ":checks_util",
+        ":lint_errors",
         "@com_google_googletest//:gtest_main",
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
