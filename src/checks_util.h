@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef SRC_CHECK_UTIL_H_
-#define SRC_CHECK_UTIL_H_
+#ifndef SRC_CHECKS_UTIL_H_
+#define SRC_CHECKS_UTIL_H_
 
 // This class is for all the helper functions that checks use.
 
@@ -141,4 +141,4 @@ bool ConsistentUppercaseLowercase(const absl::string_view &sql,
 
 }  // namespace zetasql::linter
 
-#endif  // SRC_CHECK_UTIL_H_
+#endif  // SRC_CHECKS_UTIL_H_
