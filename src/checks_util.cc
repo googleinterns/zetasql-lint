@@ -141,8 +141,8 @@ std::string GetNextWord(absl::string_view sql, int *position) {
   int &i = *position;
   while (i < sql.size() && (sql[i] == ' ' || sql[i] == '\t')) i++;
   std::string word = "";
-  while (i < sql.size() &&
-         !(sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n')) {
+  while (i < sql.size() && !(sql[i] == ' ' || sql[i] == '\t' ||
+                             sql[i] == '\n' || sql[i] == ';')) {
     word += sql[i];
     i++;
   }

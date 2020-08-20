@@ -29,19 +29,21 @@
 namespace zetasql::linter {
 
 enum class ErrorCode : int {
-  kParseFailed = 1,
-  kLineLimit = 2,
-  kSemicolon = 3,
-  kLetterCase = 4,
-  kNaming = 5,
-  kCommentStyle = 6,
-  kAlias = 7,
-  kJoin = 8,
-  kImport = 10,
-  kSingleQuote = 11,
-  kUniformIndent = 16,
-  kNotIndentTab = 17,
-  kNoLint = 100,
+  kParseFailed,
+  kLineLimit,
+  kSemicolon,
+  kLetterCase,
+  kNaming,
+  kCommentStyle,
+  kAlias,
+  kJoin,
+  kImport,
+  kSingleQuote,
+  kUniformIndent,
+  kNotIndentTab,
+  kStatus,
+  kNoLint,
+  COUNT,
 };
 
 std::ostream& operator<<(std::ostream& os, const ErrorCode& obj);
@@ -71,6 +73,9 @@ class LintError {
 
   // Constructs a text message with code position info.
   std::string ConstructPositionMessage();
+
+  // Returns mapped string that corresponds to the error type.
+  std::string ErrorCodeToString();
 
   // This function outputs lint errors of successful checks
   // and status messages of failed checks.

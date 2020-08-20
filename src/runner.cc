@@ -33,6 +33,8 @@
 ABSL_FLAG(std::string, config, "",
           "A prototxt file having configuration options.");
 
+ABSL_FLAG(bool, quick, false, "This flag will read from standart input.");
+
 namespace zetasql::linter {
 namespace {
 
@@ -56,9 +58,29 @@ int main(int argc, char* argv[]) {
   std::vector<char*> sql_files = absl::ParseCommandLine(argc, argv);
 
   std::string config_file = absl::GetFlag(FLAGS_config);
-
+  bool quick = absl::GetFlag(FLAGS_quick);
   zetasql::linter::Config config =
       zetasql::linter::ReadFromConfigFile(config_file);
+
+  if (quick) {
+    std::string str = "";
+    for (std::string line; std::getline(std::cin, line);) {
+      bool end = false;
+      for (char c : line) {
+        str += c;
+        if (c == ';') {
+          end = true;
+          break;
+        }
+      }
+      str += "\n";
+    }
+    zetasql::linter::LinterResult result =
+        zetasql::linter::RunChecks(absl::string_view(str), config, "");
+
+    result.PrintResult();
+    return 0;
+  }
 
   std::vector<std::string> supported_extensions{".sql", ".sqlm", ".sqlp",
                                                 ".sqlt", ".gsql"};
@@ -81,7 +103,7 @@ int main(int argc, char* argv[]) {
     for (std::string supported_extension : supported_extensions)
       if (supported_extension == extension) ok = true;
     if (!ok) {
-      std::cout << "Ignoring " << filename << ";  not have a valid extension ("
+      std::cerr << "Ignoring " << filename << ";  not have a valid extension ("
                 << extension_str << ")" << std::endl;
       continue;
     }
@@ -90,7 +112,6 @@ int main(int argc, char* argv[]) {
     for (std::string line; std::getline(file, line);) {
       str += line + "\n";
     }
-    std::cout << filename << std::endl;
     // zetasql::linter::PrintASTTree(str);
 
     zetasql::linter::LinterResult result =

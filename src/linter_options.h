@@ -58,7 +58,7 @@ class LinterOptions {
   int TabSize() const { return tab_size_; }
 
   // Setter for tab_size_.
-  int SetTabSize(char tab_size) { tab_size_ = tab_size; }
+  void SetTabSize(char tab_size) { tab_size_ = tab_size; }
 
   // Getter for line_delimeter_.
   int LineDelimeter() const { return line_delimeter_; }

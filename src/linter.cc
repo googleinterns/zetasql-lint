@@ -400,6 +400,14 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
           first_type = type;
         else if (second_type == 0 && type != first_type)
           second_type = type;
+        std::string name = GetNextWord(sql, &i);
+        for (std::string prev_name : imports)
+          if (prev_name == name) {
+            result.Add(ErrorCode::kImport, sql, i,
+                       absl::StrCat("\"", name, "\" is already defined."));
+            break;
+          }
+        imports.push_back(name);
       } else {
         result.Add(ErrorCode::kImport, sql, i,
                    "Imports should specify the type 'MODULE' or 'PROTO'.");

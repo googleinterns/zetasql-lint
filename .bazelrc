@@ -15,4 +15,3 @@
 #
 
 build --cxxopt="-std=c++17"
-run --cxxopt="-std=c++17"

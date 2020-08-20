@@ -55,6 +55,7 @@ CheckList GetAllChecks() {
   list.Add(CheckSingleQuotes);
   list.Add(CheckNames);
   list.Add(CheckJoin);
+  list.Add(CheckImports);
   return list;
 }
 
