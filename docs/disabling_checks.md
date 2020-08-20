@@ -1,10 +1,10 @@
 # Disabling Checks Inside The Code
 
 Any check in Zetasql-linter can be disabled or enabled for a specified code interval.
--- NOLINT(<CheckNames>) will disable specified names for the rest of the file. In order to
-re-enable it, //LINT(<CheckNames>) can be added. Every check is associated with a string name
+`--NOLINT(<CheckNames>)` will disable specified names for the rest of the file. In order to
+re-enable it, `--LINT(<CheckNames>)` can be added. Every check is associated with a string name
 indicated in [Checks](checks.md) documentation. Any lint error also gives the check name at the end, 
-in [<CheckName>] format.
+in `[<CheckName>]` format.
 
 ### Usage
 
@@ -32,7 +32,7 @@ Linter Output:
 No problems have been detected.
 ```
 
-In order to continue lint it should be: 
+But spacial case will hava an interval, and `NOLINT` should finish after that. In order to continue lint it should be: 
 
 SQL:
 ```sql
