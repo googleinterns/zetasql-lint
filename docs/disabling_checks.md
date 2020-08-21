@@ -1,6 +1,6 @@
 # Disabling Checks Inside The Code
 
-Any check in Zetasql-linter can be disabled or enabled for a specified code interval.
+Any check in ZetaSQL-linter can be disabled or enabled for a specified code interval.
 `--NOLINT(<CheckNames>)` will disable specified names for the rest of the file. In order to
 re-enable it, `--LINT(<CheckNames>)` can be added. Every check is associated with a string name
 indicated in [Checks](checks.md) documentation. Any lint error also gives the check name at the end, 
@@ -8,7 +8,7 @@ in `[<CheckName>]` format.
 
 ### Usage
 
-Lets say we have a lint error that we want to ignore.
+Let's say we have a lint error that we want to ignore.
 
 SQL:
 ```sql
@@ -50,7 +50,7 @@ In line 4, column 1: All keywords should be either uppercase or lowercase. [cons
 
  - Check names will be seperated by comma(,). E.g. `--NOLINT(join,imports)` is ok.
  - `LINT` or `NOLINT` should always be uppercase. E.g. `Lint` or `nolint` will be ignored.
- - It should be specified with one line comment. E.g. `//NOLINT(...)`, `--NOLINT(...)`, `#NOLINT(...)` are ok, but `/*NOLINT(...)*/` is not.
+ - It should be specified in a single-line comment. E.g. `//NOLINT(...)`, `--NOLINT(...)`, `#NOLINT(...)` are ok, but `/*NOLINT(...)*/` is not.
  - There shouldn't be any characters except spaces in the beginning . E.g. `-- comment NOLINT(...)` will be ignored.
  - There can be spaces in statement. E.g. `--    NOLINT   (parser-failed    )  ` is ok but not recommended.
  - There can be comments after `NOLINT`, usually it should be the explanation of `NOLINT`. E.g. `-- NOLINT(alias) ignore there` is ok.

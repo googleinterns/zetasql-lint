@@ -107,7 +107,9 @@ LinterResult CheckSemicolon(absl::string_view sql,
     if (!status.ok()) return LinterResult();
     int location =
         output->statement()->GetParseLocationRange().end().GetByteOffset();
-
+    while (location < sql.size() &&
+           (sql[location] == ' ' || sql[location] == option.LineDelimeter()))
+      location++;
     if (location >= sql.size() || sql[location] != ';') {
       if (option.IsActive(ErrorCode::kSemicolon, location))
         result.Add(ErrorCode::kSemicolon, sql, location,

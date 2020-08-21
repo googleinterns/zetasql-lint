@@ -93,7 +93,9 @@ void quick_run(Config config) {
       }
     }
     str += "\n";
+    if (end) break;
   }
+  std::cout << " HMMM \n" << str << std::endl;
   zetasql::linter::LinterResult result =
       zetasql::linter::RunChecks(absl::string_view(str), config, "");
 

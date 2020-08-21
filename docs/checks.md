@@ -80,7 +80,7 @@ SELECT A From B;
 In line 6, column 10: All keywords should be either uppercase or lowercase [consistent-letter-case]
 ```
 ## consistent-comment-style
-ZetaSQL linter supports different kind of comment styles ('#', '//', or '--'). Only one of them should be used consistently,
+SQL engines support different styles of single-line comments: '#', '//', and '--'. Only one of them should be used consistently.
 
 **Example**
 ```sql

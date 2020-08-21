@@ -1,5 +1,5 @@
 # Config
-Some checks in ZetaSQL linter has configurable options which can be specified in a file contains config proto in text format. Disabling checks can also be done using configuration file.
+Some checks in ZetaSQL linter have configurable options which can be specified in a file contains config proto in text format. Disabling checks can also be done using configuration file.
 
 **Example Usage**
 ```protobuf
