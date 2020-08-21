@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+package zetasql.linter;
+
+// This file contains basic structure of a config messsage.
+// For details of fields, check documentation in docs/config.md
+
+message Config {
+  // Size of a tab in spaces.
+  optional int32 tab_size = 1;
+
+  // The end line character.
+  optional string end_line = 2;
+
+  // Maximum number of characters one line should contain.
+  optional int32 line_limit = 3;
+
+  // Allowed indentation character(usually ' ' or '\t').
+  optional string allowed_indent = 4;
+
+  // Whether single or double quote will used in sql file.
+  optional bool single_quote = 5;
+
+  // List of check names that will be disabled.
+  repeated string nolint = 6;
+}

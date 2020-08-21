@@ -24,6 +24,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "src/checks_util.h"
 #include "src/lint_errors.h"
 #include "src/linter_options.h"
 #include "zetasql/parser/parse_tree.h"
@@ -34,62 +35,14 @@
 
 namespace zetasql::linter {
 
-// It gets rule and applies that rule to every ASTnode it visit.
-class RuleVisitor : public NonRecursiveParseTreeVisitor {
- public:
-  RuleVisitor(const std::function<LinterResult(const ASTNode *,
-                                               const absl::string_view &,
-                                               const LinterOptions &)> &rule,
-              const absl::string_view &sql, const LinterOptions &option)
-      : rule_(rule), sql_(sql), option_(option), result_(absl::OkStatus()) {}
-
-  // It is a function that will be invoked each time a new
-  // node is visited.
-  zetasql_base::StatusOr<VisitResult> defaultVisit(
-      const ASTNode *node) override;
-
-  // Returns the cumulative result of all rules that applied.
-  LinterResult GetResult() { return result_; }
-
- private:
-  std::function<LinterResult(const ASTNode *, const absl::string_view &,
-                             const LinterOptions &)>
-      rule_;
-  absl::string_view sql_;
-  LinterResult result_;
-  const LinterOptions &option_;
-};
-
-// Stores properties of a single rule and menages possible
-// applications of this rule.
-class ASTNodeRule {
- public:
-  explicit ASTNodeRule(
-      const std::function<LinterResult(
-          const ASTNode *, const absl::string_view &, const LinterOptions &)>
-          rule)
-      : rule_(rule) {}
-
-  // It applies the rule stored in this class to a sql statement.
-  LinterResult ApplyTo(absl::string_view sql, const LinterOptions &option);
-
- private:
-  std::function<LinterResult(const ASTNode *, const absl::string_view &,
-                             const LinterOptions &)>
-      rule_;
-};
-
-// Debugger that will be erased later.
-LinterResult PrintASTTree(absl::string_view sql);
+// Checks whether input can be parsed with ZetaSQL parser.
+LinterResult CheckParserSucceeds(absl::string_view sql,
+                                 const LinterOptions &option);
 
 // Checks if the number of characters in any line
 // exceed a certain treshold.
 LinterResult CheckLineLength(absl::string_view sql,
                              const LinterOptions &option);
-
-// Checks whether input can be parsed with ZetaSQL parser.
-LinterResult CheckParserSucceeds(absl::string_view sql,
-                                 const LinterOptions &option);
 
 // Checks whether every statement ends with a semicolon ';'.
 LinterResult CheckSemicolon(absl::string_view sql, const LinterOptions &option);
@@ -115,6 +68,24 @@ LinterResult CheckTabCharactersUniform(absl::string_view sql,
 LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
                                             const LinterOptions &option);
 
+// Checks if single/double quote usage conflicts with configuration.
+LinterResult CheckSingleQuotes(absl::string_view sql,
+                               const LinterOptions &option);
+
+// Checks if any of naming conventions is not satisfied. Details of naming
+// convenstion can be found in docs/checks.md#naming
+LinterResult CheckNames(absl::string_view sql, const LinterOptions &option);
+
+// Checks if any of Join statement has missing indicator(LEFT, INNER, etc.)
+LinterResult CheckJoin(absl::string_view sql, const LinterOptions &option);
+
+// Checks if PROTO imports and MODULE imports are consequtive among themselves.
+// Also checks if there is a dublicate import.
+LinterResult CheckImports(absl::string_view sql, const LinterOptions &option);
+
+// Checks if any complex expression is without parantheses.
+LinterResult CheckExpressionParantheses(absl::string_view sql,
+                                        const LinterOptions &option);
 }  // namespace zetasql::linter
 
 #endif  // SRC_LINTER_H_

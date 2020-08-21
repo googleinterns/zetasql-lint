@@ -20,12 +20,12 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_proto_library", "c
 licenses(["notice"])  # Apache v2.0
 
 cc_library(
-    name = "linter",
+    name = "check_list",
     srcs = [
-        "linter.cc",
+        "check_list.cc",
     ],
     hdrs = [
-        "linter.h",
+        "check_list.h",
     ],
     copts = [
         "-Wno-return-type",
@@ -33,6 +33,22 @@ cc_library(
         "-Wno-switch",
     ],
     deps = [
+        ":linter",
+        ":linter_options",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
+    ],
+)
+
+cc_library(
+    name = "linter",
+    srcs = [
+        "linter.cc",
+    ],
+    hdrs = [
+        "linter.h",
+    ],
+    deps = [
+        ":checks_util",
         ":lint_errors",
         ":linter_options",
         "@com_google_zetasql//zetasql/public:parse_helpers",
@@ -79,13 +95,46 @@ cc_library(
         "execute_linter.h",
     ],
     deps = [
+        ":check_list",
+        ":config",
         ":lint_errors",
         ":linter",
         "@com_google_zetasql//zetasql/public:parse_helpers",
-        "@com_google_zetasql//zetasql/public/functions:like",
         "@com_googlesource_code_re2//:re2",
     ],
 )
+
+cc_library(
+    name = "checks_util",
+    srcs = [
+        "checks_util.cc",
+    ],
+    hdrs = [
+        "checks_util.h",
+    ],
+    deps = [
+        ":lint_errors",
+        ":linter_options",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
+    ],
+)
+
+cc_library(
+    name = "config",
+    deps = [":config_cc_proto"],
+)
+
+cc_proto_library(
+    name = "config_cc_proto",
+    deps = [":config_proto"],
+)
+
+proto_library(
+    name = "config_proto",
+    srcs = ["config.proto"],
+)
+
+# ---------------------------- Binary
 
 cc_binary(
     name = "runner",
@@ -98,16 +147,21 @@ cc_binary(
         "-Wno-switch",
     ],
     deps = [
+        ":config",
         ":execute_linter",
-        "@com_googlesource_code_re2//:re2",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
     ],
 )
+
+# ---------------------------- TEST
 
 cc_test(
     name = "linter_test",
     size = "small",
     srcs = ["linter_test.cc"],
     deps = [
+        ":check_list",
         ":lint_errors",
         ":linter",
         ":linter_options",
@@ -129,17 +183,14 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "config",
-    deps = [":config_cc_proto"],
-)
-
-cc_proto_library(
-    name = "config_cc_proto",
-    deps = [":config_proto"],
-)
-
-proto_library(
-    name = "config_proto",
-    srcs = ["config.proto"],
+cc_test(
+    name = "checks_util_test",
+    size = "small",
+    srcs = ["checks_util_test.cc"],
+    deps = [
+        ":checks_util",
+        ":lint_errors",
+        "@com_google_googletest//:gtest_main",
+        "@com_google_zetasql//zetasql/public:parse_helpers",
+    ],
 )

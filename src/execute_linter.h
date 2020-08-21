@@ -24,6 +24,8 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "src/check_list.h"
+#include "src/config.pb.h"
 #include "src/lint_errors.h"
 #include "src/linter.h"
 #include "src/linter_options.h"
@@ -45,29 +47,6 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
 // and getting(then combining) results from 'ParseNoLintSingleComment'
 LinterResult ParseNoLintComments(absl::string_view sql, LinterOptions* options);
 
-// It is the general list of the linter checks. It can be used to
-// verify if a place is controlling all of the checks and not missing any.
-class CheckList {
- public:
-  // Getter function for the list
-  const std::vector<
-      std::function<LinterResult(absl::string_view, const LinterOptions&)>>
-  GetList() {
-    return list_;
-  }
-
-  // Add a linter check to the list
-  void Add(std::function<LinterResult(absl::string_view, const LinterOptions&)>
-               check) {
-    list_.push_back(check);
-  }
-
- private:
-  std::vector<
-      std::function<LinterResult(absl::string_view, const LinterOptions&)>>
-      list_;
-};
-
 // This function is the main function to get all the checks.
 // Whenever a new check is added this should be
 // the first place to update.
@@ -75,12 +54,19 @@ CheckList GetAllChecks();
 
 // This function gets LinterOptions from a specified
 // configuration file.
-LinterOptions GetOptionsFromConfig();
+LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename);
 
-// It runs all specified checks
-LinterResult RunChecks(absl::string_view sql, LinterOptions);
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, LinterOptions option);
 
-// It runs all specified checks
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, Config config,
+                       absl::string_view filename);
+
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, absl::string_view filename);
+
+// It runs all linter checks
 LinterResult RunChecks(absl::string_view sql);
 
 }  // namespace zetasql::linter

@@ -34,8 +34,7 @@ namespace {
 
 TEST(CheckListTest, SizeMatch) {
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
-  CheckList check_list = GetAllChecks();
-  EXPECT_TRUE(error_map.size() == check_list.GetList().size());
+  EXPECT_EQ(error_map.size(), static_cast<int>(ErrorCode::COUNT));
 }
 
 TEST(NolintTest, MultipleDisabling) {
@@ -49,10 +48,6 @@ TEST(NolintTest, MultipleDisabling) {
   LinterResult result = RunChecks(sql);
   result.Sort();
   std::vector<LintError> errors = result.GetErrors();
-
-  for (auto error : errors)
-    std::cout << error.GetErrorMessage() << " " << error.GetLineNumber()
-              << std::endl;
 
   EXPECT_EQ(errors.size(), 4);
 

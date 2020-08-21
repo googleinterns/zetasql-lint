@@ -27,6 +27,8 @@
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
 #include "zetasql/base/statusor.h"
+#include "zetasql/common/errors.h"
+#include "zetasql/common/status_payload_utils.h"
 #include "zetasql/public/parse_helpers.h"
 #include "zetasql/public/parse_location.h"
 
@@ -42,14 +44,26 @@ std::ostream& operator<<(std::ostream& os, const ErrorCode& obj) {
 
 std::map<std::string, ErrorCode> GetErrorMap() {
   static std::map<std::string, ErrorCode> error_map{
-      {"line-limit-exceed", ErrorCode::kLineLimit},
       {"parser-failed", ErrorCode::kParseFailed},
-      {"statement-semilocon", ErrorCode::kSemicolon},
+      {"nolint", ErrorCode::kNoLint},
+      {"line-limit-exceed", ErrorCode::kLineLimit},
+      {"statement-semicolon", ErrorCode::kSemicolon},
       {"consistent-letter-case", ErrorCode::kLetterCase},
       {"consistent-comment-style", ErrorCode::kCommentStyle},
       {"alias", ErrorCode::kAlias},
       {"uniform-indent", ErrorCode::kUniformIndent},
-      {"not-indent-tab", ErrorCode::kNotIndentTab}};
+      {"not-indent-tab", ErrorCode::kNotIndentTab},
+      {"single-or-double-quote", ErrorCode::kSingleQuote},
+      {"table-name", ErrorCode::kTableName},
+      {"window-name", ErrorCode::kWindowName},
+      {"function-name", ErrorCode::kFunctionName},
+      {"data-type-name", ErrorCode::kDataTypeName},
+      {"column-name", ErrorCode::kColumnName},
+      {"parameter-name", ErrorCode::kParameterName},
+      {"constant-name", ErrorCode::kConstantName},
+      {"join", ErrorCode::kJoin},
+      {"imports", ErrorCode::kImport},
+      {"status", ErrorCode::kStatus}};
   return error_map;
 }
 std::string LintError::GetErrorMessage() { return message_; }
@@ -58,30 +72,48 @@ std::string LintError::ConstructPositionMessage() {
   return absl::StrCat("In line ", line_, ", column ", column_, ": ");
 }
 
+std::string LintError::ErrorCodeToString() {
+  std::map<std::string, ErrorCode> error_map = GetErrorMap();
+  for (auto& it : error_map)
+    if (type_ == it.second) return it.first;
+  // It should NEVER come here, but program shouldn't crash for it.
+  // Add error to error_map to fix the bug.
+  return "";
+}
+
 void LintError::PrintError() {
   if (filename_ == "") {
-    std::cout << ConstructPositionMessage() << GetErrorMessage() << std::endl;
+    std::cout << ConstructPositionMessage() << GetErrorMessage() << " ["
+              << ErrorCodeToString() << "]" << std::endl;
   } else {
     std::cout << filename_ << ":" << ConstructPositionMessage()
-              << GetErrorMessage() << std::endl;
+              << GetErrorMessage() << " [" << ErrorCodeToString() << "]"
+              << std::endl;
   }
 }
 
 void LinterResult::PrintResult() {
   Sort();
   for (LintError error : errors_) error.PrintError();
-
-  if (show_status_)
-    for (absl::Status status : status_) std::cerr << status << std::endl;
-
-  std::cout << "Linter results are printed" << std::endl;
+  if (filename_ == "") {
+    std::cerr << "Linter results are printed" << std::endl;
+  } else {
+    std::cerr << "Linter is done processing file: " << filename_ << std::endl;
+  }
 }
 
 LinterResult::LinterResult(const absl::Status& status) {
-  if (!status.ok()) status_.push_back(status);
+  if (!status.ok()) {
+    if (show_status_) {
+      ErrorLocation location = internal::GetPayload<ErrorLocation>(status);
+      LintError t(ErrorCode::kStatus, filename_, location.line(),
+                  location.column(), status.message());
+      errors_.push_back(t);
+    }
+  }
 }
 
-absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
+absl::Status LinterResult::Add(absl::string_view filename, ErrorCode type,
                                absl::string_view sql, int character_location,
                                std::string message) {
   ParseLocationPoint lp =
@@ -96,7 +128,7 @@ absl::Status LinterResult::Add(ErrorCode type, absl::string_view filename,
 
 void LinterResult::Add(ErrorCode type, absl::string_view sql,
                        int character_location, std::string message) {
-  Add(type, "", sql, character_location, message);
+  Add(filename_, type, sql, character_location, message);
 }
 
 void LinterResult::Add(LinterResult result) {

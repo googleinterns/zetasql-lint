@@ -30,31 +30,41 @@ class LinterOptions {
   class CheckOptions;
 
  public:
+  LinterOptions() {}
+
+  explicit LinterOptions(absl::string_view filename) : filename_(filename) {}
+
+  // Setter for filename_.
+  void SetFilename(absl::string_view filename) { filename_ = filename; }
+
+  // Getter for filename_.
+  absl::string_view Filename() { return filename_; }
+
   // Returns if the linter check should be active
   // in <position>.
   bool IsActive(ErrorCode code, int position) const;
 
   // Disables linter check after <position>.
   // Enabling/Disabling positions should always come in
-  // increasing order.
+  // INCREASING order.
   void Disable(ErrorCode code, int position);
 
   // Enables linter check after <position>.
   // Enabling/Disabling positions should always come in
-  // increasing order.
+  // INCREASING order.
   void Enable(ErrorCode code, int position);
 
   // Getter for tab_size_.
   int TabSize() const { return tab_size_; }
 
   // Setter for tab_size_.
-  int SetTabSize(char tab_size) { tab_size_ = tab_size; }
+  void SetTabSize(char tab_size) { tab_size_ = tab_size; }
 
   // Getter for line_delimeter_.
   int LineDelimeter() const { return line_delimeter_; }
 
   // Setter for line_delimeter_.
-  void SetLineDelimeter(int line_delimeter) {
+  void SetLineDelimeter(char line_delimeter) {
     line_delimeter_ = line_delimeter;
   }
 
@@ -72,6 +82,15 @@ class LinterOptions {
     allowed_indent_ = allowed_indent;
   }
 
+  // Getter for single_quote_.
+  char SingleQuote() const { return single_quote_; }
+
+  // Setter for single_quote_.
+  void SetSingleQuote(char single_quote) { single_quote_ = single_quote; }
+
+  // Changes if any lint is active from the start.
+  void DisactivateCheck(ErrorCode code);
+
  private:
   // Number of characters one tab character(\t) counts.
   int tab_size_ = 4;
@@ -86,13 +105,19 @@ class LinterOptions {
   // '\t' or ' '.
   char allowed_indent_ = ' ';
 
+  // True if user should use single quotes, false for double quotes.
+  bool single_quote_ = true;
+
   // Whenever a lint check fails status message occurs. This variable
   // determines if status messages should be shown to the user.
-  bool show_status_ = false;
+  bool show_status_ = true;
 
   // For each ErrorCode that correspond to a check, it stores
   // options for that check.
   std::map<ErrorCode, CheckOptions> option_map_;
+
+  // Name of the sql file.
+  absl::string_view filename_ = "";
 
   // This class is options specified for a check.
   class CheckOptions {
@@ -110,6 +135,9 @@ class LinterOptions {
     // Enabling/Disabling positions should always come in
     // increasing order.
     void Enable(int position);
+
+    // Setter for active_start.
+    void SetActiveStart(bool active_start) { active_start_ = active_start; }
 
    private:
     // Stores switching points between enabling and disabling.

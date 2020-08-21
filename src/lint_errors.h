@@ -29,15 +29,29 @@
 namespace zetasql::linter {
 
 enum class ErrorCode : int {
-  kLineLimit = 1,
-  kParseFailed = 2,
-  kSemicolon = 3,
-  kLetterCase = 4,
-  kCommentStyle = 6,
-  kAlias = 7,
-  kUniformIndent = 16,
-  kNotIndentTab = 17,
-  kNoLint = 100,
+  kParseFailed = 0,
+  kLineLimit,
+  kSemicolon,
+  kLetterCase,
+  kCommentStyle,
+  kAlias,
+  kJoin,
+  kImport,
+  kSingleQuote,
+  kUniformIndent,
+  kNotIndentTab,
+  kTableName,
+  kWindowName,
+  kFunctionName,
+  kDataTypeName,
+  kColumnName,
+  kParameterName,
+  kConstantName,
+  kStatus,
+  kNoLint,
+  COUNT,  // This is not a real ErrorCode, It is for checking if every ErrorCode
+          // has a string. This should always at the end and no new check should
+          // have an assigned value.
 };
 
 std::ostream& operator<<(std::ostream& os, const ErrorCode& obj);
@@ -67,6 +81,9 @@ class LintError {
 
   // Constructs a text message with code position info.
   std::string ConstructPositionMessage();
+
+  // Returns mapped string that corresponds to the error type.
+  std::string ErrorCodeToString();
 
   // This function outputs lint errors of successful checks
   // and status messages of failed checks.
@@ -107,12 +124,14 @@ class LinterResult {
       : errors_(std::vector<LintError>()),
         status_(std::vector<absl::Status>()) {}
 
+  explicit LinterResult(absl::string_view filename) : filename_(filename) {}
+
   explicit LinterResult(const absl::Status& status);
 
   // This function adds a new lint error that occured in 'sql' in
   // location 'character_location', and 'type' refers to
   // the type of linter check that is failed.
-  absl::Status Add(ErrorCode type, absl::string_view filename,
+  absl::Status Add(absl::string_view filename, ErrorCode type,
                    absl::string_view sql, int character_location,
                    std::string message);
 
@@ -147,13 +166,22 @@ class LinterResult {
   // Sets if status messages will be shown to the user.
   void SetShowStatus(bool show_status) { show_status_ = show_status; }
 
+  // Sets if status messages will be shown to the user.
+  void SetFilename(absl::string_view filename) { filename_ = filename; }
+
  private:
+  // All linter errors occured in various lint checks.
   std::vector<LintError> errors_;
+
+  // All status occured in various lint checks.
   std::vector<absl::Status> status_;
 
   // Whenever a lint check fails status message occurs. This variable
   // determines if status messages should be shown to the user.
-  bool show_status_ = false;
+  bool show_status_ = true;
+
+  // Name of the sql file.
+  absl::string_view filename_;
 };
 
 }  // namespace zetasql::linter
