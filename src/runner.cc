@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <google/protobuf/text_format.h>
 #include <cctype>
 #include <fstream>
 #include <iostream>
@@ -28,6 +27,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "google/protobuf/text_format.h"
 #include "src/config.pb.h"
 #include "src/execute_linter.h"
 
