@@ -41,8 +41,8 @@ ABSL_FLAG(bool, quick, false,
 namespace zetasql::linter {
 namespace {
 
-std::string ReadFile(const char* filename) {
-  std::ifstream file(filename);
+std::string ReadFile(std::string filename) {
+  std::ifstream file(filename.c_str());
   std::string str = "";
   for (std::string line; std::getline(file, line);) {
     str += line + "\n";
@@ -50,7 +50,7 @@ std::string ReadFile(const char* filename) {
   return str;
 }
 
-Config ReadFromConfigFile(const char* filename) {
+Config ReadFromConfigFile(std::string filename) {
   Config config;
   std::string str = ReadFile(filename);
   if (!google::protobuf::TextFormat::ParseFromString(str, &config)) {
@@ -60,8 +60,7 @@ Config ReadFromConfigFile(const char* filename) {
   return config;
 }
 
-bool HasValidExtension(char* filename_char) {
-  std::string filename(filename_char);
+bool HasValidExtension(std::string filename) {
   std::vector<std::string> supported_extensions{".sql", ".sqlm", ".sqlp",
                                                 ".sqlt", ".gsql"};
 
@@ -101,9 +100,9 @@ void quick_run(Config config) {
   result.PrintResult();
 }
 
-void run(std::vector<char*> sql_files, Config config) {
+void run(std::vector<std::string> sql_files, Config config) {
   bool runner = true;
-  for (char* filename : sql_files) {
+  for (std::string filename : sql_files) {
     // The first argument is './runner'.
     if (runner || !HasValidExtension(filename)) {
       runner = false;
@@ -126,7 +125,9 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::vector<char*> sql_files = absl::ParseCommandLine(argc, argv);
+  std::vector<std::string> sql_files;
+  for (char* file : absl::ParseCommandLine(argc, argv))
+    sql_files.push_back(std::string(file));
 
   std::string config_file = absl::GetFlag(FLAGS_config);
   bool quick = absl::GetFlag(FLAGS_quick);
