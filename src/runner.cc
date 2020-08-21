@@ -35,8 +35,8 @@ ABSL_FLAG(std::string, config, "",
           "A prototxt file having configuration options.");
 
 ABSL_FLAG(bool, quick, false,
-          "This flag will read from standart input. It will read one statement "
-          "and continue until reading semicolon ';'");
+          "This flag will read from standart input. It will read one"
+          "statement and continue until reading semicolon ';'");
 
 namespace zetasql::linter {
 namespace {
@@ -60,7 +60,8 @@ Config ReadFromConfigFile(const char* filename) {
   return config;
 }
 
-bool HasValidExtension(char* filename) {
+bool HasValidExtension(char* filename_char) {
+  std::string filename(filename_char);
   std::vector<std::string> supported_extensions{".sql", ".sqlm", ".sqlp",
                                                 ".sqlt", ".gsql"};
 
@@ -68,10 +69,9 @@ bool HasValidExtension(char* filename) {
                                             supported_extensions.end(), ", ");
 
   bool ok = false;
-  std::string extension;
-  for (int i = std::strlen(filename) - 1; i >= 0 && filename[i] != '.'; i--)
-    extension = filename[i] + extension;
-  extension = '.' + extension;
+  std::size_t last_dot = filename.find_last_of(".");
+  std::string extension = filename.substr(last_dot);
+
   for (std::string supported_extension : supported_extensions)
     if (supported_extension == extension) ok = true;
   if (!ok) {

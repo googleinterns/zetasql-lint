@@ -5,3 +5,4 @@ bazel-zetasql-lint
 src/example.sql
 src/naming.sql
 trial.sql
+my_config.txt

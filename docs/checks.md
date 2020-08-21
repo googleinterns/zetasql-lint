@@ -64,7 +64,7 @@ SELECT A FROM B
 In line 4, column 16: Each statement should end with a semicolon ';' [statement-semicolon]
 ```
 ## consistent-letter-case
-Checks if every keyword, either all uppercase or all lowercase.
+Checks if every keyword is either all uppercase or all lowercase.
 
 **Example**
 ```sql
@@ -112,7 +112,7 @@ SELECT A a;
 In line 5, column 10: Always use AS keyword before aliases [alias]
 ```
 ## uniform-indent
-Indentation character should be uniform. Generally, either tabs or spaces are used. It is configurable with variable [allowed_indent](config.md#config). By default, spaces are expected to be used as the indentation character.
+Indentation character should be uniform. It could be either tab('\t') or space(' '). It is configurable with variable [allowed_indent](config.md#config). By default, spaces are expected to be used as the indentation character.
 
 **Example**
 ```sql
@@ -280,7 +280,15 @@ In line 7, column 18: Always explicitly indicate the type of join. [join]
 ## imports
 Imports should be on the top. 
 There shouldn't be any redundant(dublicate) imports.
-All 'PROTO' imports and all 'MODULE' imports should group among themselves, there shouldn't mixed order like (MODULE-PROTO-MODULE) or (PROTO-MODULE-PROTO)
+All imports should order as follows:
+
+1. Proto imports
+2. Module imports
+
+or
+
+1. Module imports
+2. Proto imports
 
 **Example**
 ```sql
