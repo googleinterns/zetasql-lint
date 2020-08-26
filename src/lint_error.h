@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef SRC_LINT_ERRORS_H_
-#define SRC_LINT_ERRORS_H_
+#ifndef SRC_LINT_ERROR_H_
+#define SRC_LINT_ERROR_H_
 
 #include <iostream>
 #include <map>
@@ -186,4 +186,4 @@ class LinterResult {
 
 }  // namespace zetasql::linter
 
-#endif  // SRC_LINT_ERRORS_H_
+#endif  // SRC_LINT_ERROR_H_

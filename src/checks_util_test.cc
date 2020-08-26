@@ -25,7 +25,7 @@
 
 #include "absl/strings/match.h"
 #include "gtest/gtest.h"
-#include "src/lint_errors.h"
+#include "src/lint_error.h"
 #include "src/linter_options.h"
 
 namespace zetasql::linter {

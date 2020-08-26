@@ -31,7 +31,7 @@
 #include <utility>
 #include <vector>
 
-#include "src/lint_errors.h"
+#include "src/lint_error.h"
 
 namespace zetasql::linter {
 

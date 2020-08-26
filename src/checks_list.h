@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef SRC_CHECK_LIST_H_
-#define SRC_CHECK_LIST_H_
+#ifndef SRC_CHECKS_LIST_H_
+#define SRC_CHECKS_LIST_H_
 
 #include <iostream>
 #include <map>
@@ -24,14 +24,14 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "src/linter.h"
+#include "src/checks.h"
 #include "src/linter_options.h"
 
 namespace zetasql::linter {
 
 // It is the general list of the linter checks. It can be used to
 // verify if a place is controlling all of the checks and not missing any.
-class CheckList {
+class ChecksList {
  public:
   // Getter function for the list
   const std::vector<
@@ -49,13 +49,13 @@ class CheckList {
 };
 
 // This function gives all Checks that are using ZetaSQL parser.
-CheckList GetParserDependantChecks();
+ChecksList GetParserDependantChecks();
 
 // This function is the main function to get all the checks.
 // Whenever a new check is added this should be
 // the first place to update.
-CheckList GetAllChecks();
+ChecksList GetAllChecks();
 
 }  // namespace zetasql::linter
 
-#endif  // SRC_CHECK_LIST_H_
+#endif  // SRC_CHECKS_LIST_H_

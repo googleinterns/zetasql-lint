@@ -29,7 +29,7 @@
 #include "absl/strings/strip.h"
 #include "google/protobuf/text_format.h"
 #include "src/config.pb.h"
-#include "src/execute_linter.h"
+#include "src/linter.h"
 
 ABSL_FLAG(std::string, config, "",
           "A prototxt file having configuration options.");
@@ -70,7 +70,7 @@ bool HasValidExtension(std::string filename) {
   bool ok = false;
   std::string extension = "";
   // Find until last '.';
-  for (int i = filename.size()-1; i >= 0; i--) {
+  for (int i = filename.size() - 1; i >= 0; i--) {
     extension = filename[i] + extension;
     if (filename[i] == '.') break;
   }
