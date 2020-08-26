@@ -1,7 +1,7 @@
 # Config
 Some checks in ZetaSQL linter have configurable options which can be specified in a file contains config proto in text format. Disabling checks can also be done using configuration file.
 
-**Example Usage**
+**Example File**
 ```protobuf
 tab_size: 2;
 line_limit: 80;

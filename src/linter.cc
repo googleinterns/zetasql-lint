@@ -323,30 +323,33 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
                             "Function names should be UpperCamelCase.");
 
              } else if (kind == AST_SIMPLE_TYPE) {
-               // It seems there is a simple type under a column space (although
-               // there shouldn't be any). This simply ignores the node in
-               // column space.
-               if (parent->parent()->parent() != nullptr &&
-                   parent->parent()->parent()->node_kind() ==
-                       AST_TVF_SCHEMA_COLUMN)
-                 return result;
-
                if (!IsAllCaps(name) &&
                    option.IsActive(ErrorCode::kDataTypeName, position))
                  result.Add(ErrorCode::kDataTypeName, sql, position,
                             "Simple SQL data types should be all caps.");
 
              } else if (kind == AST_SELECT_COLUMN) {
-               if (!IsLowerSnakeCase(name) && !IsLowerCamelCase(name) &&
+               if (!IsLowerSnakeCase(name) && !IsUpperCamelCase(name) &&
                    option.IsActive(ErrorCode::kColumnName, position))
                  result.Add(ErrorCode::kColumnName, sql, position,
                             "Column names should be lower_snake_case.");
 
              } else if (kind == AST_FUNCTION_PARAMETERS) {
-               if (!IsLowerSnakeCase(name) &&
+               // For a function parameter child(0) is identifier, and child(1)
+               // is the type.
+               bool isTable = parent->child(1)->node_kind() == AST_TVF_SCHEMA;
+
+               if (!isTable && !IsLowerSnakeCase(name) &&
                    option.IsActive(ErrorCode::kParameterName, position))
                  result.Add(ErrorCode::kParameterName, sql, position,
-                            "Function parameters should be lower_snake_case.");
+                            "Non-table function parameters should be "
+                            "lower_snake_case.");
+
+               if (isTable && !IsUpperCamelCase(name) &&
+                   option.IsActive(ErrorCode::kParameterName, position))
+                 result.Add(ErrorCode::kParameterName, sql, position,
+                            "Table or proto function parameters should be "
+                            "UpperCamelCase.");
 
              } else if (kind == AST_CREATE_CONSTANT_STATEMENT) {
                if (!IsCapsSnakeCase(name) &&
