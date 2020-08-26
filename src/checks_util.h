@@ -138,7 +138,8 @@ bool OneLineStatement(absl::string_view line);
 // Checks if a string consists of either all uppercase letters
 // or all lowercase letters.
 bool ConsistentUppercaseLowercase(const absl::string_view &sql,
-                                  const ParseLocationRange &range);
+                                  const ParseLocationRange &range,
+                                  const LinterOptions &option);
 
 }  // namespace zetasql::linter
 

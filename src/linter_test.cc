@@ -87,11 +87,14 @@ TEST(LinterTest, UppercaseKeywordCheck) {
   EXPECT_TRUE(CheckUppercaseKeywords(
                   "SELECT * FROM emp WHERE b = a OR c < d GROUP BY x", option)
                   .ok());
+  option.SetUpperKeyword(false);
   EXPECT_TRUE(CheckUppercaseKeywords(
-                  "SELECT * FROM emp where b = a or c < d GROUP by x", option)
+                  "select * from emp where b = a or c < d group by x", option)
                   .ok());
+
+  option.SetUpperKeyword(true);
   LinterResult result = CheckUppercaseKeywords(
-      "SeLEct * frOM emp wHEre b = a or c < d GROUP by x", option);
+      "SeLEct * frOM emp wHEre b = a OR c < d GROUP BY x", option);
   EXPECT_FALSE(result.ok());
   auto errors = result.GetErrors();
 
@@ -253,7 +256,7 @@ TEST(LinterTest, CheckColumnNames) {
   LinterOptions option;
   EXPECT_TRUE(CheckNames("SELECT column_name;", option).ok());
   EXPECT_TRUE(CheckNames("SELECT TableName.column_name;", option).ok());
-  EXPECT_FALSE(CheckNames("SELECT ColumnName;", option).ok());
+  EXPECT_FALSE(CheckNames("SELECT columnName;", option).ok());
   EXPECT_FALSE(CheckNames("SELECT COLUMN_NAME;", option).ok());
 }
 

@@ -20,7 +20,10 @@ message Config {
 
   // Whether single or double quote will used in sql file.
   optional bool single_quote = 5;
+  
+  // Whether uppercase or lowercase letters will be used for keywords.
+  optional bool upper_keyword = 6;
 
   // List of check names that will be disabled.
-  repeated string nolint = 6;
+  repeated string nolint = 7;
 }

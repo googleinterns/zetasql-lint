@@ -131,17 +131,29 @@ LinterResult CheckUppercaseKeywords(absl::string_view sql,
 
   if (!status.ok()) return LinterResult(status);
 
+  // Some special words in tokenizer is defined as "Keyword",
+  // but linter shouldn't complain for them. The list can change easily, and
+  // every word in the list should be uppercase.
+  std::vector<std::string> nolint_words{"TIME", "DATE", "TRUE", "FALSE"};
+
   // Keyword definition in tokenizer is very wide,
   // it include some special characters like ';', '*', etc.
   // Keyword Uppercase check will simply ignore characters
   // outside of english lowercase letters.
   for (auto &token : parse_tokens) {
     if (token.kind() == ParseToken::KEYWORD) {
-      if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange())) {
+      if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange(),
+                                        option)) {
+        bool nolint = false;
+        for (auto word : nolint_words)
+          if (token.GetSQL() == word) nolint = true;
+        if (nolint) continue;
         int position = token.GetLocationRange().start().GetByteOffset();
         if (option.IsActive(ErrorCode::kLetterCase, position))
-          result.Add(ErrorCode::kLetterCase, sql, position,
-                     "All keywords should be either uppercase or lowercase.");
+          result.Add(
+              ErrorCode::kLetterCase, sql, position,
+              absl::StrCat("All keywords should be ",
+                           option.UpperKeyword() ? "uppercase" : "lowercase"));
       }
     }
   }
@@ -204,7 +216,8 @@ LinterResult CheckAliasKeyword(absl::string_view sql,
            if (node->node_kind() == AST_ALIAS) {
              int position =
                  node->GetParseLocationRange().start().GetByteOffset();
-             if (sql[position] != 'A' || sql[position + 1] != 'S') {
+             std::string name = ConvertToUppercase(GetNodeString(node, sql));
+             if (name.substr(0, 2) != "AS") {
                if (option.IsActive(ErrorCode::kAlias, position))
                  result.Add(ErrorCode::kAlias, sql, position,
                             "Always use AS keyword before aliases");

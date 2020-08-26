@@ -112,10 +112,13 @@ LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename) {
 
   if (config.has_line_limit()) option.SetLineLimit(config.line_limit());
 
-  if (config.has_single_quote()) option.SetSingleQuote(config.single_quote());
-
   if (config.has_allowed_indent())
     option.SetAllowedIndent(config.allowed_indent()[0]);
+
+  if (config.has_single_quote()) option.SetSingleQuote(config.single_quote());
+
+  if (config.has_upper_keyword())
+    option.SetUpperKeyword(config.upper_keyword());
 
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 

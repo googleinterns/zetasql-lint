@@ -114,7 +114,7 @@ void run(std::vector<std::string> sql_files, Config config) {
       continue;
     }
     std::string str = ReadFile(filename);
-    // PrintASTTree(str);
+    PrintASTTree(str);
     LinterResult result = RunChecks(absl::string_view(str), config, filename);
 
     result.PrintResult();
