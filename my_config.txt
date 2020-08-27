@@ -1,1 +1,1 @@
-nolint: ["alias"];
+nolint: ["function-name"];

@@ -45,7 +45,8 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
   LinterResult result;
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
-  const LazyRE2 kRegex = {"\\s*(NOLINT|LINT)\\s*\\(([a-z ,-]*)\\)\\s*(.*)\\s*"};
+  const LazyRE2 kRegex = {
+      "\\s*(NOLINT|LINT)\\s*\\(([a-z ,\"-]*)\\)\\s*(.*)\\s*"};
   std::string type = "";
   std::string check_names = "";
   std::string lint_comment = "";
@@ -63,8 +64,9 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
       // The name inside of parantheses is stored in 'check_name'
       // If it is not valid add error, otherwise enable/disable position
       if (!error_map.count(check_name)) {
-        result.Add(ErrorCode::kNoLint, sql, position,
-                   absl::StrCat("Unkown NOLINT error category: ", check_name));
+        result.Add(
+            ErrorCode::kNoLint, sql, position,
+            absl::StrCat("Unkown NOLINT error category: '", check_name, "'"));
       } else {
         const ErrorCode& code = error_map[check_name];
         if (type == "NOLINT")
@@ -122,20 +124,19 @@ LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename) {
 
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
-  for (std::string check_name : config.nolint()) {
-    if (error_map.count(check_name)) {
+  for (std::string check_name : config.nolint())
+    if (error_map.count(check_name))
       option.DisactivateCheck(error_map[check_name]);
-    }
-  }
+
   return option;
 }
 
-LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
+LinterResult RunChecks(absl::string_view sql, LinterOptions option) {
   ChecksList list = GetAllChecks();
-  LinterResult result = ParseNoLintComments(sql, &options);
-  result.SetFilename(options.Filename());
+  LinterResult result = ParseNoLintComments(sql, &option);
+  result.SetFilename(option.Filename());
   for (auto check : list.GetList()) {
-    result.Add(check(sql, options));
+    result.Add(check(sql, option));
   }
   return result;
 }

@@ -38,6 +38,9 @@ ABSL_FLAG(bool, quick, false,
           "This flag will read from standart input. It will read one"
           "statement and continue until reading semicolon ';'");
 
+ABSL_FLAG(bool, debug, false,
+          "This flag will show ASTTree for debug purposes.");
+
 namespace zetasql::linter {
 namespace {
 
@@ -106,6 +109,7 @@ void quick_run(Config config) {
 }
 
 void run(std::vector<std::string> sql_files, Config config) {
+  bool debug = absl::GetFlag(FLAGS_debug);
   bool runner = true;
   for (std::string filename : sql_files) {
     // The first argument is './runner'.
@@ -114,7 +118,7 @@ void run(std::vector<std::string> sql_files, Config config) {
       continue;
     }
     std::string str = ReadFile(filename);
-    PrintASTTree(str);
+    if (debug) PrintASTTree(str);
     LinterResult result = RunChecks(absl::string_view(str), config, filename);
 
     result.PrintResult();

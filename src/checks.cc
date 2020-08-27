@@ -134,7 +134,8 @@ LinterResult CheckUppercaseKeywords(absl::string_view sql,
   // Some special words in tokenizer is defined as "Keyword",
   // but linter shouldn't complain for them. The list can change easily, and
   // every word in the list should be uppercase.
-  std::vector<std::string> nolint_words{"TIME", "DATE", "TRUE", "FALSE"};
+  std::vector<std::string> nolint_words{"TIME", "OFFSET", "DATE", "TRUE",
+                                        "FALSE"};
 
   // Keyword definition in tokenizer is very wide,
   // it include some special characters like ';', '*', etc.
@@ -144,11 +145,11 @@ LinterResult CheckUppercaseKeywords(absl::string_view sql,
     if (token.kind() == ParseToken::KEYWORD) {
       if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange(),
                                         option)) {
+        int position = token.GetLocationRange().start().GetByteOffset();
         bool nolint = false;
         for (auto word : nolint_words)
           if (token.GetSQL() == word) nolint = true;
         if (nolint) continue;
-        int position = token.GetLocationRange().start().GetByteOffset();
         if (option.IsActive(ErrorCode::kLetterCase, position))
           result.Add(
               ErrorCode::kLetterCase, sql, position,
@@ -373,7 +374,7 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
            }
            return result;
          })
-      .ApplyTo(sql, LinterOptions());
+      .ApplyTo(sql, option);
 }
 
 LinterResult CheckJoin(absl::string_view sql, const LinterOptions &option) {
@@ -393,7 +394,7 @@ LinterResult CheckJoin(absl::string_view sql, const LinterOptions &option) {
            }
            return result;
          })
-      .ApplyTo(sql, LinterOptions());
+      .ApplyTo(sql, option);
 }
 
 LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
@@ -438,6 +439,7 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
 LinterResult CheckExpressionParantheses(absl::string_view sql,
                                         const LinterOptions &option) {
   LinterResult result;
+
   return result;
 }
 
