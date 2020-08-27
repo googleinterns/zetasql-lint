@@ -62,5 +62,25 @@ TEST(NolintTest, MultipleDisabling) {
   EXPECT_TRUE(errors[3].GetPosition() == std::make_pair(8, 2));
 }
 
+TEST(LinterTest, StatementValidityCheck) {
+  LinterOptions option;
+  EXPECT_TRUE(CheckParserSucceeds("SELECT 5+2", &option).ok());
+  EXPECT_FALSE(CheckParserSucceeds("SELECT 5+2 sss ddd", &option).ok());
+
+  EXPECT_TRUE(CheckParserSucceeds(
+                  "SELECT * FROM emp where b = a or c < d group by x", &option)
+                  .ok());
+
+  EXPECT_TRUE(
+      CheckParserSucceeds(
+          "SELECT e, sum(f) FROM emp where b = a or c < d group by x", &option)
+          .ok());
+
+  EXPECT_FALSE(
+      CheckParserSucceeds("SELET A FROM B\nSELECT C FROM D", &option).ok());
+
+  EXPECT_FALSE(CheckParserSucceeds("SELECT 1; SELECT 2 3 4;", &option).ok());
+}
+
 }  // namespace
 }  // namespace zetasql::linter

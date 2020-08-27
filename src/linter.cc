@@ -23,6 +23,7 @@
 #include <memory>
 #include <streambuf>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_split.h"
@@ -36,6 +37,8 @@
 #include "src/linter_options.h"
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
+#include "zetasql/common/errors.h"
+#include "zetasql/common/status_payload_utils.h"
 
 namespace zetasql::linter {
 
@@ -106,6 +109,32 @@ LinterResult ParseNoLintComments(absl::string_view sql,
   return result;
 }
 
+LinterResult CheckParserSucceeds(absl::string_view sql, LinterOptions* option) {
+  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
+  bool is_the_end = false;
+  int byte_position = 1;
+  LinterResult result;
+
+  while (!is_the_end) {
+    std::unique_ptr<ParserOutput> output;
+    byte_position = location.byte_position();
+    absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
+                                                   &output, &is_the_end);
+    if (!status.ok()) {
+      if (option->IsActive(ErrorCode::kParseFailed, byte_position)) {
+        ErrorLocation position = internal::GetPayload<ErrorLocation>(status);
+        result.Add(ErrorCode::kParseFailed, position.line(), position.column(),
+                   status.message());
+        return result;
+      }
+    }
+    option->AddParserOutput(output.release());
+  }
+
+  option->SetRememberParser(true);
+  return result;
+}
+
 LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename) {
   LinterOptions option(filename);
   if (config.has_tab_size()) option.SetTabSize(config.tab_size());
@@ -135,6 +164,11 @@ LinterResult RunChecks(absl::string_view sql, LinterOptions option) {
   ChecksList list = GetAllChecks();
   LinterResult result = ParseNoLintComments(sql, &option);
   result.SetFilename(option.Filename());
+
+  // This check should come strictly before others, and able to
+  // change options.
+  result.Add(CheckParserSucceeds(sql, &option));
+
   for (auto check : list.GetList()) {
     result.Add(check(sql, option));
   }

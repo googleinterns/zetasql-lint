@@ -47,10 +47,8 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
 // and getting(then combining) results from 'ParseNoLintSingleComment'
 LinterResult ParseNoLintComments(absl::string_view sql, LinterOptions* options);
 
-// This function is the main function to get all the checks.
-// Whenever a new check is added this should be
-// the first place to update.
-ChecksList GetAllChecks();
+// Checks whether input can be parsed with ZetaSQL parser.
+LinterResult CheckParserSucceeds(absl::string_view sql, LinterOptions* options);
 
 // This function gets LinterOptions from a specified
 // configuration file.

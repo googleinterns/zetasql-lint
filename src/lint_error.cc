@@ -131,6 +131,11 @@ void LinterResult::Add(ErrorCode type, absl::string_view sql,
   Add(filename_, type, sql, character_location, message);
 }
 
+void LinterResult::Add(ErrorCode type, int line, int column,
+                       absl::string_view message) {
+  errors_.push_back(LintError(type, filename_, line, column, message));
+}
+
 void LinterResult::Add(LinterResult result) {
   for (LintError error : result.GetErrors()) errors_.push_back(error);
   for (absl::Status status : result.GetStatus()) status_.push_back(status);

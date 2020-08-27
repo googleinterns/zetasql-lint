@@ -43,33 +43,6 @@
 // rules in the documention in 'docs/checks.md'.
 namespace zetasql::linter {
 
-LinterResult CheckParserSucceeds(absl::string_view sql,
-                                 const LinterOptions &option) {
-  std::unique_ptr<ParserOutput> output;
-
-  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
-
-  bool is_the_end = false;
-  int byte_position = 1;
-  LinterResult result;
-  while (!is_the_end) {
-    byte_position = location.byte_position();
-    absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
-                                                   &output, &is_the_end);
-    if (!status.ok()) {
-      if (option.IsActive(ErrorCode::kParseFailed, byte_position)) {
-        return LinterResult(status);
-        // ErrorLocation location = internal::GetPayload<ErrorLocation>(status);
-        result.Add(
-            ErrorCode::kParseFailed, sql, byte_position,
-            absl::StrCat("Parser Failed, with message ", status.message()));
-      }
-      break;
-    }
-  }
-  return result;
-}
-
 LinterResult CheckLineLength(absl::string_view sql,
                              const LinterOptions &option) {
   int line_size = 0;

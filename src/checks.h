@@ -35,10 +35,6 @@
 
 namespace zetasql::linter {
 
-// Checks whether input can be parsed with ZetaSQL parser.
-LinterResult CheckParserSucceeds(absl::string_view sql,
-                                 const LinterOptions &option);
-
 // Checks if the number of characters in any line
 // exceed a certain treshold.
 LinterResult CheckLineLength(absl::string_view sql,

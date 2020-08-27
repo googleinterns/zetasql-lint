@@ -26,12 +26,15 @@
 //    4. Update the documentation.
 // This class can also contain other helper varibles that are used in checks.
 
+#include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "src/lint_error.h"
+#include "zetasql/public/parse_helpers.h"
 
 namespace zetasql::linter {
 
@@ -63,45 +66,55 @@ class LinterOptions {
   // INCREASING order.
   void Enable(ErrorCode code, int position);
 
+  // Adds a single parser output to parset_output_
+  void AddParserOutput(ParserOutput *output);
+
+  // ---------------------------------- GETTER/SETTER functions
+
+  // Getter for parser_output_
+  std::vector<ParserOutput *> ParserOutputs() const { return parser_outputs_; }
+
+  // Getter for remember_parser_
+  bool RememberParser() const { return remember_parser_; }
+
+  // Setter for remember_parser_
+  void SetRememberParser(bool val) { remember_parser_ = val; }
+
   // Getter for tab_size_.
   int TabSize() const { return tab_size_; }
 
   // Setter for tab_size_.
-  void SetTabSize(char tab_size) { tab_size_ = tab_size; }
+  void SetTabSize(char val) { tab_size_ = val; }
 
   // Getter for line_delimeter_.
   int LineDelimeter() const { return line_delimeter_; }
 
   // Setter for line_delimeter_.
-  void SetLineDelimeter(char line_delimeter) {
-    line_delimeter_ = line_delimeter;
-  }
+  void SetLineDelimeter(char val) { line_delimeter_ = val; }
 
   // Getter for line_limit_.
   int LineLimit() const { return line_limit_; }
 
   // Setter for line_limit_.
-  void SetLineLimit(int line_limit) { line_limit_ = line_limit; }
+  void SetLineLimit(int val) { line_limit_ = val; }
 
   // Getter for allowed_indent_.
   char AllowedIndent() const { return allowed_indent_; }
 
   // Setter for allowed_indent_.
-  void SetAllowedIndent(char allowed_indent) {
-    allowed_indent_ = allowed_indent;
-  }
+  void SetAllowedIndent(char val) { allowed_indent_ = val; }
 
   // Getter for single_quote_.
   bool SingleQuote() const { return single_quote_; }
 
   // Setter for single_quote_.
-  void SetSingleQuote(bool single_quote) { single_quote_ = single_quote; }
+  void SetSingleQuote(bool val) { single_quote_ = val; }
 
   // Getter for all_upper_.
   bool UpperKeyword() const { return upper_keyword_; }
 
   // Setter for all_upper_.
-  void SetUpperKeyword(bool upper_keyword) { upper_keyword_ = upper_keyword; }
+  void SetUpperKeyword(bool val) { upper_keyword_ = val; }
 
   // Changes if any lint is active from the start.
   void DisactivateCheck(ErrorCode code);
@@ -133,6 +146,13 @@ class LinterOptions {
   // For each ErrorCode that correspond to a check, it stores
   // options for that check.
   std::map<ErrorCode, CheckOptions> option_map_;
+
+  // Stores Whether parser output should be saved.
+  // It will optimize linter to make only one parser call.
+  bool remember_parser_ = false;
+
+  // If remember_parser_ is enabled, this will hold parser output.
+  std::vector<ParserOutput *> parser_outputs_;
 
   // Name of the sql file.
   absl::string_view filename_ = "";

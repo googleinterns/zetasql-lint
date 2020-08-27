@@ -221,11 +221,17 @@ bool ConsistentUppercaseLowercase(const absl::string_view &sql,
 LinterResult ASTNodeRule::ApplyTo(absl::string_view sql,
                                   const LinterOptions &option) {
   RuleVisitor visitor(rule_, sql, option);
+  if (option.RememberParser()) {
+    for (auto output : option.ParserOutputs()) {
+      absl::Status status = output->statement()->TraverseNonRecursive(&visitor);
+      if (!status.ok()) return LinterResult(status);
+    }
+    return visitor.GetResult();
+  }
 
   std::unique_ptr<ParserOutput> output;
   ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
   absl::Status status;
-  LinterResult result;
 
   bool is_the_end = false;
   while (!is_the_end) {

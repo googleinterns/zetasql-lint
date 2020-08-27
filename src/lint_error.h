@@ -140,6 +140,9 @@ class LinterResult {
   void Add(ErrorCode type, absl::string_view sql, int character_location,
            std::string message);
 
+  // Direct addition of a lint error.
+  void Add(ErrorCode type, int line, int column, absl::string_view message);
+
   // This function adds all errors in 'result' to this
   // It basicly combines two result.
   void Add(LinterResult result);
