@@ -17,6 +17,21 @@
 #ifndef SRC_CHECKS_H_
 #define SRC_CHECKS_H_
 
+// This class is only for main implementation of checks.
+// Helper functions can be added to 'check_utils.h'
+// All checks should follow the same signature, extra options
+// can be included in 'LinterOptions' and it is recommended to make
+// it configurable if possible.
+//
+// In order to add a new check you should follow these steps:
+//    1. Create an ErrorCode(code of the lint error).
+//    2. Map name of the check and ErrorCode by adding an element to
+//       error_map in lint_error.cc->GetErrorMap();
+//    3. Implement a check function in checks.cc file and add it to checks.h
+//    4. Add it to the checks_list. (Linter will run it after this step).
+//    5. Add unit tests.
+//    6. Update the documentation /docs/checks.md with examples.
+
 #include <cstdio>
 #include <string>
 #include <utility>

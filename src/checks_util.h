@@ -81,6 +81,9 @@ class ASTNodeRule {
       rule_;
 };
 
+absl::string_view GetName(const ParseLocationRange &range,
+                          const absl::string_view &sql);
+
 // Given an ASTNode returns corresponding string for that node.
 absl::string_view GetNodeString(const ASTNode *node,
                                 const absl::string_view &sql);
@@ -169,7 +172,8 @@ void GetIdentifiers(const ASTNode *node, std::vector<const ASTNode *> *list);
 
 // Gets all identifiers from previously parsed AST.
 // Return empty vector if options doesn't have previously parsed AST.
-std::vector<const ASTNode *> GetIdentifiers(const LinterOptions &option);
+std::vector<const ASTNode *> GetIdentifiers(absl::string_view sql,
+                                            const LinterOptions &option);
 
 }  // namespace zetasql::linter
 

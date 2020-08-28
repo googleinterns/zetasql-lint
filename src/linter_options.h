@@ -18,12 +18,14 @@
 #define SRC_LINTER_OPTIONS_H_
 
 // This class is for any options that checks will use.
-// Adding configurable option have this steps:
+//
+// Adding configurable option have these steps:
 //    1. Create the variable, along with its UpperCamelCase
 //       getter and setter functions. (Follow the convention.)
 //    2. Add the variable to the 'config.proto' file.
 //    3. Connect proto and option from linter.cc/GetOptionsFromConfig()
 //    4. Update the documentation.
+//
 // This class can also contain other helper varibles that are used in checks.
 
 #include <functional>

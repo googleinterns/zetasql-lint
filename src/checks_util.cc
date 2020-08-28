@@ -37,11 +37,16 @@
 
 namespace zetasql::linter {
 
+absl::string_view GetName(const ParseLocationRange &range,
+                          const absl::string_view &sql) {
+  const int &start = range.start().GetByteOffset();
+  const int &end = range.end().GetByteOffset();
+  return sql.substr(start, end - start);
+}
+
 absl::string_view GetNodeString(const ASTNode *node,
                                 const absl::string_view &sql) {
-  const int &start = node->GetParseLocationRange().start().GetByteOffset();
-  const int &end = node->GetParseLocationRange().end().GetByteOffset();
-  return sql.substr(start, end - start);
+  return GetName(node->GetParseLocationRange(), sql);
 }
 
 bool IsUppercase(char c) { return 'A' <= c && c <= 'Z'; }
@@ -104,16 +109,16 @@ bool IsTheSame(const ASTNode *node, const ParseToken &token) {
 
 bool IgnoreForwardSpaces(absl::string_view sql, int *position) {
   int &i = *position;
-  while (i < static_cast<int>(sql.size) &&
+  while (i < static_cast<int>(sql.size()) &&
          (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n'))
     i++;
-  return i < static_cast<int>(sql.size);
+  return i >= static_cast<int>(sql.size());
 }
 
 bool IgnoreBackwardSpaces(absl::string_view sql, int *position) {
   int &i = *position;
   while (i >= 0 && (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n')) i--;
-  return i >= 0;
+  return i < 0;
 }
 
 bool IgnoreComments(absl::string_view sql, const LinterOptions option,
@@ -307,21 +312,31 @@ void GetIdentifiers(const ASTNode *node, std::vector<const ASTNode *> *list) {
     GetIdentifiers(node->child(i), list);
 }
 
-std::vector<const ASTNode *> GetIdentifiers(const LinterOptions &option) {
+std::vector<const ASTNode *> GetIdentifiers(absl::string_view sql,
+                                            const LinterOptions &option) {
   std::vector<const ASTNode *> identifiers;
   if (option.RememberParser()) {
     for (auto node : option.ParserOutputs())
       GetIdentifiers(node->statement(), &identifiers);
+  } else {
+    std::unique_ptr<ParserOutput> output;
+    ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
 
-    // Normally it is sorted anyway, but just to be sure.
-    // Identifiers need to be sorted
-    sort(identifiers.begin(), identifiers.end(),
-         [&](const ASTNode *a, const ASTNode *b) {
-           return a->GetParseLocationRange().start().GetByteOffset() <
-                  b->GetParseLocationRange().start().GetByteOffset();
-         });
+    bool is_the_end = false;
+    while (!is_the_end) {
+      absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
+                                                     &output, &is_the_end);
+      if (!status.ok()) return identifiers;
+      GetIdentifiers(output->statement(), &identifiers);
+    }
   }
-
+  // Normally it is sorted anyway, but just to be sure.
+  // Identifiers need to be sorted
+  sort(identifiers.begin(), identifiers.end(),
+       [&](const ASTNode *a, const ASTNode *b) {
+         return a->GetParseLocationRange().start().GetByteOffset() <
+                b->GetParseLocationRange().start().GetByteOffset();
+       });
   return identifiers;
 }
 

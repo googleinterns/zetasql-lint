@@ -234,10 +234,10 @@ TEST(LinterTest, CheckSimpleTypeNames) {
 
 TEST(LinterTest, CheckColumnNames) {
   LinterOptions option;
-  EXPECT_TRUE(CheckNames("SELECT column_name;", option).ok());
-  EXPECT_TRUE(CheckNames("SELECT TableName.column_name;", option).ok());
-  EXPECT_FALSE(CheckNames("SELECT columnName;", option).ok());
-  EXPECT_FALSE(CheckNames("SELECT COLUMN_NAME;", option).ok());
+  EXPECT_TRUE(CheckNames("SELECT a AS column_name;", option).ok());
+  EXPECT_TRUE(CheckNames("SELECT a AS TableName.column_name;", option).ok());
+  EXPECT_FALSE(CheckNames("SELECT a AS columnName;", option).ok());
+  EXPECT_FALSE(CheckNames("SELECT a AS COLUMN_NAME;", option).ok());
 }
 
 TEST(LinterTest, CheckFunctionParameterNames) {
@@ -305,6 +305,53 @@ TEST(LinterTest, CheckImports) {
   EXPECT_EQ(result.GetErrors()[0].GetErrorMessage(),
             "Imports should specify the type 'MODULE' or 'PROTO'.");
 }
+
+TEST(LinterTest, CheckExpressionParantheses) {
+  LinterOptions option;
+
+  EXPECT_EQ(CheckExpressionParantheses(
+                "SELECT D where a AND b*2 OR (c AND x OR T);", option)
+                .GetErrors()
+                .size(),
+            2);
+
+  EXPECT_TRUE(
+      CheckExpressionParantheses("SELECT D where a or b or c;", option).ok());
+
+  EXPECT_TRUE(
+      CheckExpressionParantheses("SELECT D where a and b and c;", option).ok());
+  EXPECT_FALSE(
+      CheckExpressionParantheses("SELECT D where a and b or c;", option).ok());
+  EXPECT_FALSE(
+      CheckExpressionParantheses("SELECT D where a or b and c;", option).ok());
+  EXPECT_TRUE(CheckExpressionParantheses(
+                  "SELECT D where (       a or b   ) and c;", option)
+                  .ok());
+}
+
+TEST(LinterTest, CheckCountStar) {
+  LinterOptions option;
+  EXPECT_TRUE(CheckCountStar("SELECT COUNT", option).ok());
+  EXPECT_TRUE(CheckCountStar("SELECT COUNT(0)", option).ok());
+  EXPECT_FALSE(CheckCountStar("SELECT COUNT(1)", option).ok());
+  EXPECT_TRUE(CheckCountStar("SELECT COUNT(*)", option).ok());
+}
+
+TEST(LinterTest, CheckKeywordNamedIdentifier) {
+  LinterOptions option;
+  LinterResult result = CheckKeywordNamedIdentifier("SELECT Date", option);
+  result.PrintResult();
+  EXPECT_FALSE(CheckKeywordNamedIdentifier("SELECT Date", option).ok());
+  EXPECT_TRUE(CheckKeywordNamedIdentifier("SELECT `Date`", option).ok());
+  EXPECT_FALSE(CheckKeywordNamedIdentifier("SELECT Type", option).ok());
+  EXPECT_TRUE(CheckKeywordNamedIdentifier("SELECT `Type`", option).ok());
+  EXPECT_FALSE(
+      CheckKeywordNamedIdentifier("SELECT Table.column1", option).ok());
+  EXPECT_TRUE(
+      CheckKeywordNamedIdentifier("SELECT `Table`.column1", option).ok());
+}
+
+TEST(LinterTest, CheckSpecifyTable) { LinterOptions option; }
 
 }  // namespace
 }  // namespace zetasql::linter

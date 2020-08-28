@@ -97,7 +97,7 @@ LinterResult CheckSemicolon(absl::string_view sql,
 LinterResult CheckUppercaseKeywords(absl::string_view sql,
                                     const LinterOptions &option) {
   std::vector<ParseToken> keywords = GetKeywords(sql);
-  std::vector<const ASTNode *> identifiers = GetIdentifiers(option);
+  std::vector<const ASTNode *> identifiers = GetIdentifiers(sql, option);
   LinterResult result;
   int index = 0;
   for (auto &token : keywords) {
@@ -116,7 +116,8 @@ LinterResult CheckUppercaseKeywords(absl::string_view sql,
       if (option.IsActive(ErrorCode::kLetterCase, position))
         result.Add(
             ErrorCode::kLetterCase, sql, position,
-            absl::StrCat("All keywords should be ",
+            absl::StrCat("Keyword '", GetName(token.GetLocationRange(), sql),
+                         "' should be all ",
                          option.UpperKeyword() ? "uppercase" : "lowercase"));
     }
   }
@@ -370,7 +371,7 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
     if (IgnoreComments(sql, option, &i)) continue;
 
     if (i + 6 <= sql.size() && sql.substr(i, 6) == "IMPORT") {
-      if (option.IsActive(ErrorCode::kImport, i)) continue;
+      if (!option.IsActive(ErrorCode::kImport, i)) continue;
       i += 6;
       std::string word = ConvertToUppercase(GetNextWord(sql, &i));
       if (word == "PROTO" || word == "MODULE") {
@@ -403,8 +404,33 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
 
 LinterResult CheckExpressionParantheses(absl::string_view sql,
                                         const LinterOptions &option) {
-  LinterResult result;
-  return result;
+  return ASTNodeRule([](const ASTNode *node, const absl::string_view &sql,
+                        const LinterOptions &option) -> LinterResult {
+           LinterResult result;
+           if (node->node_kind() == AST_OR_EXPR ||
+               node->node_kind() == AST_AND_EXPR) {
+             if (node->parent() == nullptr) return result;
+             const ASTNode *parent = node->parent();
+
+             if (parent->node_kind() == AST_OR_EXPR ||
+                 parent->node_kind() == AST_AND_EXPR) {
+               if (parent->node_kind() == node->node_kind()) return result;
+               int pos = node->GetParseLocationRange().start().GetByteOffset();
+               int start = pos - 1;
+               int end = node->GetParseLocationRange().end().GetByteOffset();
+
+               if (IgnoreBackwardSpaces(sql, &start) ||
+                   IgnoreForwardSpaces(sql, &end) || sql[start] != '(' ||
+                   sql[end] != ')')
+                 if (option.IsActive(ErrorCode::kExpressionParanteses, pos))
+                   result.Add(ErrorCode::kExpressionParanteses, sql, pos,
+                              "Use parantheses between consequtive AND and OR "
+                              "statements.");
+             }
+           }
+           return result;
+         })
+      .ApplyTo(sql, option);
 }
 
 LinterResult CheckCountStar(absl::string_view sql,
@@ -436,7 +462,25 @@ LinterResult CheckCountStar(absl::string_view sql,
 LinterResult CheckKeywordNamedIdentifier(absl::string_view sql,
                                          const LinterOptions &option) {
   LinterResult result;
+  std::vector<ParseToken> keywords = GetKeywords(sql);
+  std::vector<const ASTNode *> identifiers = GetIdentifiers(sql, option);
+  int index = 0;
+  for (auto &token : keywords) {
+    // Two pointer algorithm to reduce complexity O(N^2) to O(N)
+    while (index < identifiers.size() && IsBefore(identifiers[index], token))
+      index++;
 
+    // The Identifier is also a keyword
+    if (index < identifiers.size() && IsTheSame(identifiers[index], token)) {
+      int position = token.GetLocationRange().start().GetByteOffset();
+      if (option.IsActive(ErrorCode::kKeywordIdentifier, position))
+        result.Add(
+            ErrorCode::kKeywordIdentifier, sql, position,
+            absl::StrCat("Identifier `", GetName(token.GetLocationRange(), sql),
+                         "` is an SQL keyword. Use escape charater(`)"
+                         " to fix it"));
+    }
+  }
   return result;
 }
 

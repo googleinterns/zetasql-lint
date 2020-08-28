@@ -40,6 +40,7 @@ ChecksList GetParserDependantChecks() {
   list.Add(CheckUppercaseKeywords);
   list.Add(CheckNames);
   list.Add(CheckJoin);
+  list.Add(CheckExpressionParantheses);
   return list;
 }
 
@@ -56,6 +57,9 @@ ChecksList GetAllChecks() {
   list.Add(CheckNames);
   list.Add(CheckJoin);
   list.Add(CheckImports);
+  list.Add(CheckExpressionParantheses);
+  list.Add(CheckCountStar);
+  list.Add(CheckKeywordNamedIdentifier);
   return list;
 }
 
