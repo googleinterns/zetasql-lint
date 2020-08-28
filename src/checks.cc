@@ -349,10 +349,11 @@ LinterResult CheckJoin(absl::string_view sql, const LinterOptions &option) {
            LinterResult result;
            // SingleNodeDebugString also returns the type if there are any.
            // If it is equal to normal kind string, this means join is typeless.
+           int position = node->GetParseLocationRange().start().GetByteOffset();
            if (node->node_kind() == AST_JOIN &&
+               option.IsActive(ErrorCode::kImport, position) &&
                node->SingleNodeDebugString() == node->GetNodeKindString()) {
-             result.Add(ErrorCode::kJoin, sql,
-                        node->GetParseLocationRange().start().GetByteOffset(),
+             result.Add(ErrorCode::kJoin, sql, position,
                         "Always explicitly indicate the type of join.");
            }
            return result;
@@ -369,6 +370,7 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
     if (IgnoreComments(sql, option, &i)) continue;
 
     if (i + 6 <= sql.size() && sql.substr(i, 6) == "IMPORT") {
+      if (option.IsActive(ErrorCode::kImport, i)) continue;
       i += 6;
       std::string word = ConvertToUppercase(GetNextWord(sql, &i));
       if (word == "PROTO" || word == "MODULE") {
