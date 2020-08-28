@@ -316,6 +316,7 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
                             "Simple SQL data types should be all caps.");
 
              } else if (kind == AST_SELECT_COLUMN) {
+               if (parent->node_kind() != AST_ALIAS) return result;
                if (!IsLowerSnakeCase(name) && !IsUpperCamelCase(name) &&
                    option.IsActive(ErrorCode::kColumnName, position))
                  result.Add(ErrorCode::kColumnName, sql, position,
