@@ -32,6 +32,7 @@
 #include "zetasql/parser/parser.h"
 #include "zetasql/public/parse_helpers.h"
 #include "zetasql/public/parse_location.h"
+#include "zetasql/public/parse_tokens.h"
 
 namespace zetasql::linter {
 
@@ -108,6 +109,13 @@ bool IsCapsSnakeCase(absl::string_view name);
 // Checks if a name is written in lower_snake_case.
 bool IsLowerSnakeCase(absl::string_view name);
 
+// Checks if, in a sql file, corresponding position of a node is smaller than
+// corresponding position of a token.
+bool IsBefore(const ASTNode *node, const ParseToken &token);
+
+// Checks if a node and a token refer to the same part of the sql.
+bool IsTheSame(const ASTNode *node, const ParseToken &token);
+
 // Given a position in a sql file, checks if any comment
 // starts from that position. If it is, sets position to the end of
 // that comment(such that one character afterwards is unrelated to the comment),
@@ -140,6 +148,18 @@ bool OneLineStatement(absl::string_view line);
 bool ConsistentUppercaseLowercase(const absl::string_view &sql,
                                   const ParseLocationRange &range,
                                   const LinterOptions &option);
+
+// Return all tokenizer keywords of a sql query.
+// They will be returned sorted in ascending position order.
+std::vector<ParseToken> GetKeywords(absl::string_view sql);
+
+// Helper function that adds all identifiers in subtree of a ASTNode
+// to a list.
+void GetIdentifiers(const ASTNode *node, std::vector<const ASTNode *> *list);
+
+// Gets all identifiers from previously parsed AST.
+// Return empty vector if options doesn't have previously parsed AST.
+std::vector<const ASTNode *> GetIdentifiers(const LinterOptions &option);
 
 }  // namespace zetasql::linter
 

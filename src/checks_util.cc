@@ -15,6 +15,7 @@
 //
 #include "src/checks_util.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -32,6 +33,7 @@
 #include "zetasql/public/parse_helpers.h"
 #include "zetasql/public/parse_location.h"
 #include "zetasql/public/parse_resume_location.h"
+#include "zetasql/public/parse_tokens.h"
 
 namespace zetasql::linter {
 
@@ -86,6 +88,18 @@ bool IsLowerSnakeCase(absl::string_view name) {
   for (char c : name)
     if (IsUppercase(c)) return false;
   return true;
+}
+
+bool IsBefore(const ASTNode *node, const ParseToken &token) {
+  return node->GetParseLocationRange().start().GetByteOffset() <
+         token.GetLocationRange().start().GetByteOffset();
+}
+
+bool IsTheSame(const ASTNode *node, const ParseToken &token) {
+  return node->GetParseLocationRange().start().GetByteOffset() ==
+             token.GetLocationRange().start().GetByteOffset() &&
+         node->GetParseLocationRange().end().GetByteOffset() ==
+             token.GetLocationRange().end().GetByteOffset();
 }
 
 bool IgnoreComments(absl::string_view sql, const LinterOptions option,
@@ -250,6 +264,51 @@ zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(
     const ASTNode *node) {
   result_.Add(rule_(node, sql_, option_));
   return VisitResult::VisitChildren(node);
+}
+
+std::vector<ParseToken> GetKeywords(absl::string_view sql) {
+  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
+  std::vector<ParseToken> parse_tokens;
+  std::vector<ParseToken> keywords;
+
+  absl::Status status =
+      GetParseTokens(ParseTokenOptions(), &location, &parse_tokens);
+
+  if (!status.ok()) return keywords;
+  for (auto &token : parse_tokens)
+    if (token.kind() == ParseToken::KEYWORD) keywords.push_back(token);
+
+  sort(keywords.begin(), keywords.end(),
+       [&](const ParseToken &a, const ParseToken &b) {
+         return a.GetLocationRange().start().GetByteOffset() <
+                b.GetLocationRange().start().GetByteOffset();
+       });
+
+  return keywords;
+}
+
+void GetIdentifiers(const ASTNode *node, std::vector<const ASTNode *> *list) {
+  if (node->node_kind() == AST_IDENTIFIER) list->push_back(node);
+  for (int i = 0; i < node->num_children(); i++)
+    GetIdentifiers(node->child(i), list);
+}
+
+std::vector<const ASTNode *> GetIdentifiers(const LinterOptions &option) {
+  std::vector<const ASTNode *> identifiers;
+  if (option.RememberParser()) {
+    for (auto node : option.ParserOutputs())
+      GetIdentifiers(node->statement(), &identifiers);
+
+    // Normally it is sorted anyway, but just to be sure.
+    // Identifiers need to be sorted
+    sort(identifiers.begin(), identifiers.end(),
+         [&](const ASTNode *a, const ASTNode *b) {
+           return a->GetParseLocationRange().start().GetByteOffset() <
+                  b->GetParseLocationRange().start().GetByteOffset();
+         });
+  }
+
+  return identifiers;
 }
 
 }  // namespace zetasql::linter

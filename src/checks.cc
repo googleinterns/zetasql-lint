@@ -15,6 +15,7 @@
 //
 #include "src/checks.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -95,40 +96,28 @@ LinterResult CheckSemicolon(absl::string_view sql,
 
 LinterResult CheckUppercaseKeywords(absl::string_view sql,
                                     const LinterOptions &option) {
-  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
-  std::vector<ParseToken> parse_tokens;
+  std::vector<ParseToken> keywords = GetKeywords(sql);
+  std::vector<const ASTNode *> identifiers = GetIdentifiers(option);
   LinterResult result;
+  int index = 0;
+  for (auto &token : keywords) {
+    // Two pointer algorithm to reduce complexity O(N^2) to O(N)
+    while (index < identifiers.size() && IsBefore(identifiers[index], token))
+      index++;
 
-  absl::Status status =
-      GetParseTokens(ParseTokenOptions(), &location, &parse_tokens);
+    // Ignore the keyword token if it is an identifier.
+    if (index < identifiers.size() && IsTheSame(identifiers[index], token))
+      continue;
 
-  if (!status.ok()) return LinterResult(status);
+    if (token.GetSQL() == "TRUE" || token.GetSQL() == "FALSE") continue;
 
-  // Some special words in tokenizer is defined as "Keyword",
-  // but linter shouldn't complain for them. The list can change easily, and
-  // every word in the list should be uppercase.
-  std::vector<std::string> nolint_words{"TIME", "OFFSET", "DATE", "TRUE",
-                                        "FALSE"};
-
-  // Keyword definition in tokenizer is very wide,
-  // it include some special characters like ';', '*', etc.
-  // Keyword Uppercase check will simply ignore characters
-  // outside of english lowercase letters.
-  for (auto &token : parse_tokens) {
-    if (token.kind() == ParseToken::KEYWORD) {
-      if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange(),
-                                        option)) {
-        int position = token.GetLocationRange().start().GetByteOffset();
-        bool nolint = false;
-        for (auto word : nolint_words)
-          if (token.GetSQL() == word) nolint = true;
-        if (nolint) continue;
-        if (option.IsActive(ErrorCode::kLetterCase, position))
-          result.Add(
-              ErrorCode::kLetterCase, sql, position,
-              absl::StrCat("All keywords should be ",
-                           option.UpperKeyword() ? "uppercase" : "lowercase"));
-      }
+    if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange(), option)) {
+      int position = token.GetLocationRange().start().GetByteOffset();
+      if (option.IsActive(ErrorCode::kLetterCase, position))
+        result.Add(
+            ErrorCode::kLetterCase, sql, position,
+            absl::StrCat("All keywords should be ",
+                         option.UpperKeyword() ? "uppercase" : "lowercase"));
     }
   }
   return result;
