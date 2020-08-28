@@ -408,7 +408,26 @@ LinterResult CheckExpressionParantheses(absl::string_view sql,
 LinterResult CheckCountStar(absl::string_view sql,
                             const LinterOptions &option) {
   LinterResult result;
+  for (int i = 0; i < static_cast<int>(sql.size()); i++) {
+    IgnoreComments(sql, option, &i);
+    IgnoreStrings(sql, &i);
+    if (i + 5 < static_cast<int>(sql.size()) &&
+        ConvertToUppercase(sql.substr(i, 5)) == "COUNT") {
+      i += 5;
+      if (IgnoreForwardSpaces(sql, &i)) continue;
+      if (sql[i] != '(') continue;
+      i++;
+      if (IgnoreForwardSpaces(sql, &i)) continue;
+      if (sql[i] != '1') continue;
+      i++;
+      if (IgnoreForwardSpaces(sql, &i)) continue;
+      if (sql[i] != ')') continue;
 
+      if (option.IsActive(ErrorCode::kCountStar, i))
+        result.Add(ErrorCode::kCountStar, sql, i,
+                   "Use COUNT(*) instead of COUNT(1)");
+    }
+  }
   return result;
 }
 

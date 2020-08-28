@@ -47,6 +47,10 @@ enum class ErrorCode : int {
   kColumnName,
   kParameterName,
   kConstantName,
+  kExpressionParanteses,
+  kCountStar,
+  kKeywordIdentifier,
+  kSpecifyTable,
   kStatus,
   kNoLint,
   COUNT,  // This is not a real ErrorCode, It is for checking if every ErrorCode

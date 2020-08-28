@@ -63,6 +63,10 @@ std::map<std::string, ErrorCode> GetErrorMap() {
       {"constant-name", ErrorCode::kConstantName},
       {"join", ErrorCode::kJoin},
       {"imports", ErrorCode::kImport},
+      {"expression-parantheses", ErrorCode::kExpressionParanteses},
+      {"count-star", ErrorCode::kCountStar},
+      {"keyword-identifier", ErrorCode::kKeywordIdentifier},
+      {"specify-table", ErrorCode::kSpecifyTable},
       {"status", ErrorCode::kStatus}};
   return error_map;
 }

@@ -116,6 +116,16 @@ bool IsBefore(const ASTNode *node, const ParseToken &token);
 // Checks if a node and a token refer to the same part of the sql.
 bool IsTheSame(const ASTNode *node, const ParseToken &token);
 
+// Ignores forward spaces and increase the position until the first non-empty
+// character. (empty characters: ' ', '\t', '\n')
+// Returns true if position reaches to the end.
+bool IgnoreForwardSpaces(absl::string_view sql, int *position);
+
+// Ignores backward spaces and decrease the position until the first non-empty
+// character. (empty characters: ' ', '\t', '\n')
+// Returns true if position reaches to the end.
+bool IgnoreBackwardSpaces(absl::string_view sql, int *position);
+
 // Given a position in a sql file, checks if any comment
 // starts from that position. If it is, sets position to the end of
 // that comment(such that one character afterwards is unrelated to the comment),

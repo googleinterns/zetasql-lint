@@ -102,6 +102,20 @@ bool IsTheSame(const ASTNode *node, const ParseToken &token) {
              token.GetLocationRange().end().GetByteOffset();
 }
 
+bool IgnoreForwardSpaces(absl::string_view sql, int *position) {
+  int &i = *position;
+  while (i < static_cast<int>(sql.size) &&
+         (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n'))
+    i++;
+  return i < static_cast<int>(sql.size);
+}
+
+bool IgnoreBackwardSpaces(absl::string_view sql, int *position) {
+  int &i = *position;
+  while (i >= 0 && (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n')) i--;
+  return i >= 0;
+}
+
 bool IgnoreComments(absl::string_view sql, const LinterOptions option,
                     int *position, bool ignore_single_line) {
   int &i = *position;
