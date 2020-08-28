@@ -82,6 +82,17 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &option);
 // Checks if any complex expression is without parantheses.
 LinterResult CheckExpressionParantheses(absl::string_view sql,
                                         const LinterOptions &option);
+
+// Checks if count(1) is used instead of count(*)
+LinterResult CheckCountStar(absl::string_view sql, const LinterOptions &option);
+
+// Checks if any identifier is named as a keyword (date, type, language, etc.)
+LinterResult CheckKeywordNamedIdentifier(absl::string_view sql,
+                                         const LinterOptions &option);
+
+// Checks if table names are specified in a query containing "JOIN".
+LinterResult CheckSpecifyTable(absl::string_view sql,
+                               const LinterOptions &option);
 }  // namespace zetasql::linter
 
 #endif  // SRC_CHECKS_H_

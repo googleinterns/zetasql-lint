@@ -412,6 +412,26 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
 LinterResult CheckExpressionParantheses(absl::string_view sql,
                                         const LinterOptions &option) {
   LinterResult result;
+  return result;
+}
+
+LinterResult CheckCountStar(absl::string_view sql,
+                            const LinterOptions &option) {
+  LinterResult result;
+
+  return result;
+}
+
+LinterResult CheckKeywordNamedIdentifier(absl::string_view sql,
+                                         const LinterOptions &option) {
+  LinterResult result;
+
+  return result;
+}
+
+LinterResult CheckSpecifyTable(absl::string_view sql,
+                               const LinterOptions &option) {
+  LinterResult result;
 
   return result;
 }
