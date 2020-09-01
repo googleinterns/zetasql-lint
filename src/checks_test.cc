@@ -342,14 +342,15 @@ TEST(LinterTest, CheckCountStar) {
   EXPECT_TRUE(CheckCountStar("SELECT COUNT", options).ok());
   EXPECT_TRUE(CheckCountStar("SELECT COUNT(0)", options).ok());
   EXPECT_FALSE(CheckCountStar("SELECT COUNT ( 1  )", options).ok());
+  EXPECT_FALSE(CheckCountStar("SELECT count(1)", options).ok());
   EXPECT_TRUE(CheckCountStar("SELECT COUNT(*)", options).ok());
-  EXPECT_EQ(CheckCountStar("SELECT count ( 1 )\n"
+  EXPECT_EQ(CheckCountStar("SELECT count ( 1 );\n"
                            "/* count(1) */ SELECT COUNT(*) -- count 1",
                            options)
                 .GetErrors()
                 .size(),
             1);
-  EXPECT_EQ(CheckCountStar("SELECT count ( 1 )\n"
+  EXPECT_EQ(CheckCountStar("SELECT count ( 1 );\n"
                            "/* count(1) */ SELECT COUNT(*) -- count 1",
                            options)
                 .GetErrors()

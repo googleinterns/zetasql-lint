@@ -136,7 +136,7 @@ LinterResult CheckParserSucceeds(absl::string_view sql,
   return result;
 }
 
-void GetOptionsFromConfig(Config config, LinterOptions *options) {
+void GetOptionsFromConfig(Config config, LinterOptions* options) {
   if (config.has_tab_size()) options->SetTabSize(config.tab_size());
 
   if (config.has_end_line()) options->SetLineDelimeter(config.end_line()[0]);

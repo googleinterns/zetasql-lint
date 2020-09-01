@@ -68,36 +68,19 @@ LinterResult CheckLineLength(absl::string_view sql,
 
 LinterResult CheckSemicolon(absl::string_view sql,
                             const LinterOptions &options) {
-  // If parser is not active from config this check won't work.
-  if (!options.IsActive(ErrorCode::kParseFailed, -1)) return LinterResult();
   LinterResult result;
-  std::unique_ptr<ParserOutput> output;
-
-  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
-  bool is_the_end = false;
-
-  while (!is_the_end) {
-    absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
-                                                   &output, &is_the_end);
-    if (!status.ok()) return LinterResult();
-    int location =
-        output->statement()->GetParseLocationRange().end().GetByteOffset();
-    while (location < sql.size() &&
-           (sql[location] == ' ' || sql[location] == options.LineDelimeter()))
-      location++;
-    if (location >= sql.size() || sql[location] != ';') {
-      if (options.IsActive(ErrorCode::kSemicolon, location))
-        result.Add(ErrorCode::kSemicolon, sql, location,
-                   "Each statement should end with a "
-                   "semicolon ';'.");
-    }
-  }
+  int location = static_cast<int>(sql.size()) - 1;
+  if (!IgnoreSpacesBackward(sql, &location) && sql[location] != ';')
+    if (options.IsActive(ErrorCode::kSemicolon, location))
+      result.Add(ErrorCode::kSemicolon, sql, location,
+                 "Each statement should end with a "
+                 "semicolon ';'.");
   return result;
 }
 
 LinterResult CheckUppercaseKeywords(absl::string_view sql,
                                     const LinterOptions &options) {
-  std::vector<ParseToken> keywords = GetKeywords(sql);
+  std::vector<ParseToken> keywords = GetKeywords(sql, ErrorCode::kLetterCase);
   std::vector<const ASTNode *> identifiers = GetIdentifiers(sql, options);
   LinterResult result;
   int index = 0;
@@ -176,8 +159,7 @@ LinterResult CheckAliasKeyword(absl::string_view sql,
                         const LinterOptions &options) -> LinterResult {
            LinterResult result;
            if (node->node_kind() == AST_ALIAS) {
-             int position =
-                 node->GetParseLocationRange().start().GetByteOffset();
+             int position = GetStartPosition(*node);
              const std::string name =
                  ConvertToUppercase(GetNodeString(node, sql));
              if (name.size() < 2 || !absl::StartsWith(name, "AS")) {
@@ -349,7 +331,7 @@ LinterResult CheckJoin(absl::string_view sql, const LinterOptions &options) {
            LinterResult result;
            // SingleNodeDebugString also returns the type if there are any.
            // If it is equal to normal kind string, this means join is typeless.
-           int position = node->GetParseLocationRange().start().GetByteOffset();
+           int position = GetStartPosition(*node);
            if (node->node_kind() == AST_JOIN &&
                options.IsActive(ErrorCode::kImport, position) &&
                node->SingleNodeDebugString() == node->GetNodeKindString()) {
@@ -461,7 +443,8 @@ LinterResult CheckCountStar(absl::string_view sql,
 LinterResult CheckKeywordNamedIdentifier(absl::string_view sql,
                                          const LinterOptions &options) {
   LinterResult result;
-  std::vector<ParseToken> keywords = GetKeywords(sql);
+  std::vector<ParseToken> keywords =
+      GetKeywords(sql, ErrorCode::kKeywordIdentifier);
   std::vector<const ASTNode *> identifiers = GetIdentifiers(sql, options);
   int index = 0;
   for (auto &token : keywords) {
@@ -475,7 +458,7 @@ LinterResult CheckKeywordNamedIdentifier(absl::string_view sql,
       if (options.IsActive(ErrorCode::kKeywordIdentifier, position))
         result.Add(
             ErrorCode::kKeywordIdentifier, sql, position,
-            absl::StrCat("Identifier `", GetName(token.GetLocationRange(), sql),
+            absl::StrCat("Identifier `", token.GetImage(),
                          "` is an SQL keyword. Change the name or escape with "
                          "backticks (`)"));
     }

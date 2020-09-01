@@ -320,7 +320,7 @@ SELECT D WHERE a AND (b OR c);
 
 **Linter Output**
 ```
-In line 5, column 16: Use parantheses between consequtive AND and OR statements. [expression-parantheses]
+In line 5, column 16: Use parantheses between consequtive AND and OR operators. [expression-parantheses]
 ```
 
 ## count-star

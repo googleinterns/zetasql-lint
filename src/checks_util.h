@@ -81,12 +81,16 @@ class ASTNodeRule {
       rule_;
 };
 
+// It will return the corresponding string of a range in a sql.
 absl::string_view GetName(const ParseLocationRange &range,
                           const absl::string_view &sql);
 
 // Given an ASTNode returns corresponding string for that node.
 absl::string_view GetNodeString(const ASTNode *node,
                                 const absl::string_view &sql);
+
+// Return start position of an ASTNode.
+int GetStartPosition(const ASTNode &node);
 
 // Checks if a character is uppercase.
 bool IsUppercase(char c);
@@ -164,7 +168,7 @@ bool ConsistentUppercaseLowercase(const absl::string_view &sql,
 
 // Returns all tokenizer keywords of a sql query.
 // They will be returned sorted in ascending position order.
-std::vector<ParseToken> GetKeywords(absl::string_view sql);
+std::vector<ParseToken> GetKeywords(absl::string_view sql, ErrorCode code);
 
 // Helper function that adds all identifiers in subtree of a ASTNode
 // to a list.

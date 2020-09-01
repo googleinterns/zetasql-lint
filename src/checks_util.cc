@@ -49,6 +49,14 @@ absl::string_view GetNodeString(const ASTNode *node,
   return GetName(node->GetParseLocationRange(), sql);
 }
 
+int GetStartPosition(const ASTNode &node) {
+  return node.GetParseLocationRange().start().GetByteOffset();
+}
+
+int GetStartPosition(const ParseToken &token) {
+  return token.GetLocationRange().start().GetByteOffset();
+}
+
 bool IsUppercase(char c) { return 'A' <= c && c <= 'Z'; }
 bool IsLowercase(char c) { return 'a' <= c && c <= 'z'; }
 
@@ -96,8 +104,7 @@ bool IsLowerSnakeCase(absl::string_view name) {
 }
 
 bool IsBefore(const ASTNode *node, const ParseToken &token) {
-  return node->GetParseLocationRange().start().GetByteOffset() <
-         token.GetLocationRange().start().GetByteOffset();
+  return GetStartPosition(*node) < GetStartPosition(token);
 }
 
 bool IsTheSame(const ASTNode *node, const ParseToken &token) {
@@ -282,7 +289,7 @@ zetasql_base::StatusOr<VisitResult> RuleVisitor::defaultVisit(
   return VisitResult::VisitChildren(node);
 }
 
-std::vector<ParseToken> GetKeywords(absl::string_view sql) {
+std::vector<ParseToken> GetKeywords(absl::string_view sql, ErrorCode code) {
   ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
   std::vector<ParseToken> parse_tokens;
   std::vector<ParseToken> keywords;
@@ -290,7 +297,11 @@ std::vector<ParseToken> GetKeywords(absl::string_view sql) {
   absl::Status status =
       GetParseTokens(ParseTokenOptions(), &location, &parse_tokens);
 
-  if (!status.ok()) return keywords;
+  if (!status.ok()) {
+    std::cout << "Tokenizer Failed for check [" << code
+              << "]: " << status.message() << std::endl;
+    return keywords;
+  }
   for (auto &token : parse_tokens) {
     if (token.kind() == ParseToken::KEYWORD) keywords.push_back(token);
   }
@@ -326,8 +337,7 @@ std::vector<const ASTNode *> GetIdentifiers(absl::string_view sql,
   // Identifiers need to be sorted
   sort(identifiers.begin(), identifiers.end(),
        [&](const ASTNode *a, const ASTNode *b) {
-         return a->GetParseLocationRange().start().GetByteOffset() <
-                b->GetParseLocationRange().start().GetByteOffset();
+         return GetStartPosition(*a) < GetStartPosition(*b);
        });
   return identifiers;
 }

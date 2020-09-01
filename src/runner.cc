@@ -38,7 +38,7 @@ ABSL_FLAG(bool, quick, false,
           "Read from standart input. It will read one"
           "statement and continue until reading semicolon ';'");
 
-ABSL_FLAG(bool, parsed_ast, false, "Print parsed AST for the input queries.");
+ABSL_FLAG(bool, print_ast, false, "Print parsed AST for the input queries.");
 
 namespace zetasql::linter {
 namespace {
@@ -108,7 +108,7 @@ void quick_run(Config config) {
 }
 
 void run(std::vector<std::string> sql_files, Config config) {
-  bool debug = absl::GetFlag(FLAGS_parsed_ast);
+  bool debug = absl::GetFlag(FLAGS_print_ast);
   bool runner = true;
   for (std::string filename : sql_files) {
     // The first argument is './runner'.
@@ -127,18 +127,7 @@ void run(std::vector<std::string> sql_files, Config config) {
 }  // namespace
 }  // namespace zetasql::linter
 
-class B {
- public:
- private:
- int a;
-  std::vector<std::unique_ptr<bool>> v;
-};
-
-void ff(const B& a) {}
-
 int main(int argc, char* argv[]) {
-  B a;
-  
   if (argc < 2) {
     std::cerr << "Usage: ./runner --config=<config_file> <file_names>\n"
               << std::endl;
