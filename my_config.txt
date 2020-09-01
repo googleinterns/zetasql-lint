@@ -1,4 +1,1 @@
-tab_size: 2;
-line_limit: 80;
-allowed_indent: ' ';
-nolint: ["parser-failed", "alias"];
+nolint: ["alias"];

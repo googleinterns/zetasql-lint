@@ -24,7 +24,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "src/lint_errors.h"
+#include "src/lint_error.h"
 #include "src/linter_options.h"
 #include "zetasql/parser/parse_tree.h"
 #include "zetasql/parser/parse_tree_visitor.h"
@@ -203,7 +203,8 @@ bool OneLineStatement(absl::string_view line) {
 }
 
 bool ConsistentUppercaseLowercase(const absl::string_view &sql,
-                                  const ParseLocationRange &range) {
+                                  const ParseLocationRange &range,
+                                  const LinterOptions &option) {
   bool uppercase = false;
   bool lowercase = false;
   for (int i = range.start().GetByteOffset(); i < range.end().GetByteOffset();
@@ -213,7 +214,8 @@ bool ConsistentUppercaseLowercase(const absl::string_view &sql,
   }
   // There shouldn't be any case any Keyword
   // contains both uppercase and lowercase characters
-  return !(lowercase && uppercase);
+  if (option.UpperKeyword()) return !lowercase;
+  return !uppercase;
 }
 
 LinterResult ASTNodeRule::ApplyTo(absl::string_view sql,

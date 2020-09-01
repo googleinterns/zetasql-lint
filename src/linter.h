@@ -17,75 +17,58 @@
 #ifndef SRC_LINTER_H_
 #define SRC_LINTER_H_
 
-#include <cstdio>
+#include <iostream>
+#include <map>
+#include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
-#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "src/checks_util.h"
-#include "src/lint_errors.h"
+#include "src/checks.h"
+#include "src/checks_list.h"
+#include "src/config.pb.h"
+#include "src/lint_error.h"
 #include "src/linter_options.h"
-#include "zetasql/parser/parse_tree.h"
-#include "zetasql/parser/parse_tree_visitor.h"
-#include "zetasql/parser/parser.h"
-#include "zetasql/public/parse_helpers.h"
-#include "zetasql/public/parse_resume_location.h"
 
 namespace zetasql::linter {
 
-// Checks whether input can be parsed with ZetaSQL parser.
-LinterResult CheckParserSucceeds(absl::string_view sql,
-                                 const LinterOptions &option);
+// This function will parse "NOLINT"(<Name1>, <Name2>, ...) syntax from
+// a single line of comment.
+// If NOLINT usage errors occur, it counts as a lint
+// error and it will be returned in a result.
+LinterResult ParseNoLintSingleComment(absl::string_view line,
+                                      const absl::string_view& sql,
+                                      int position, LinterOptions* options);
 
-// Checks if the number of characters in any line
-// exceed a certain treshold.
-LinterResult CheckLineLength(absl::string_view sql,
-                             const LinterOptions &option);
+// This function will parse "NOLINT"(<CheckName>) syntax from a sql file.
+// If NOLINT usage errors occur, it counts as a lint
+// error and it will be returned in a result.
+// The main purpose of this function is parsing single line comments
+// and getting(then combining) results from 'ParseNoLintSingleComment'
+LinterResult ParseNoLintComments(absl::string_view sql, LinterOptions* options);
 
-// Checks whether every statement ends with a semicolon ';'.
-LinterResult CheckSemicolon(absl::string_view sql, const LinterOptions &option);
+// This function is the main function to get all the checks.
+// Whenever a new check is added this should be
+// the first place to update.
+ChecksList GetAllChecks();
 
-// Checks whether all keywords are uppercase.
-LinterResult CheckUppercaseKeywords(absl::string_view sql,
-                                    const LinterOptions &option);
+// This function gets LinterOptions from a specified
+// configuration file.
+LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename);
 
-// Check if comment style is uniform (either -- or //, not both).
-LinterResult CheckCommentType(absl::string_view sql,
-                              const LinterOptions &option);
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, LinterOptions option);
 
-// Checks whether all aliases denoted by 'AS' keyword.
-LinterResult CheckAliasKeyword(absl::string_view sql,
-                               const LinterOptions &option);
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, Config config,
+                       absl::string_view filename);
 
-// Checks whether all tab characters in indentations are equal to
-// <allowed_indent>.
-LinterResult CheckTabCharactersUniform(absl::string_view sql,
-                                       const LinterOptions &option);
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql, absl::string_view filename);
 
-// Checks whether there are no tabs in the code except indents.
-LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
-                                            const LinterOptions &option);
+// It runs all linter checks
+LinterResult RunChecks(absl::string_view sql);
 
-// Checks if single/double quote usage conflicts with configuration.
-LinterResult CheckSingleQuotes(absl::string_view sql,
-                               const LinterOptions &option);
-
-// Checks if any of naming conventions is not satisfied. Details of naming
-// convenstion can be found in docs/checks.md#naming
-LinterResult CheckNames(absl::string_view sql, const LinterOptions &option);
-
-// Checks if any of Join statement has missing indicator(LEFT, INNER, etc.)
-LinterResult CheckJoin(absl::string_view sql, const LinterOptions &option);
-
-// Checks if PROTO imports and MODULE imports are consequtive among themselves.
-// Also checks if there is a dublicate import.
-LinterResult CheckImports(absl::string_view sql, const LinterOptions &option);
-
-// Checks if any complex expression is without parantheses.
-LinterResult CheckExpressionParantheses(absl::string_view sql,
-                                        const LinterOptions &option);
 }  // namespace zetasql::linter
 
 #endif  // SRC_LINTER_H_

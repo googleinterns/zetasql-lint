@@ -25,7 +25,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "src/lint_errors.h"
+#include "src/lint_error.h"
 #include "src/linter_options.h"
 #include "zetasql/parser/parse_tree.h"
 #include "zetasql/parser/parse_tree_visitor.h"
@@ -138,7 +138,8 @@ bool OneLineStatement(absl::string_view line);
 // Checks if a string consists of either all uppercase letters
 // or all lowercase letters.
 bool ConsistentUppercaseLowercase(const absl::string_view &sql,
-                                  const ParseLocationRange &range);
+                                  const ParseLocationRange &range,
+                                  const LinterOptions &option);
 
 }  // namespace zetasql::linter
 

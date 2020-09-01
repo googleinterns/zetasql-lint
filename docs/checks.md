@@ -64,7 +64,7 @@ SELECT A FROM B
 In line 4, column 16: Each statement should end with a semicolon ';' [statement-semicolon]
 ```
 ## consistent-letter-case
-Checks if every keyword is either all uppercase or all lowercase.
+Checks if every keyword is all uppercase or all lowercase accoring to [configuration](config.md).
 
 **Example**
 ```sql
@@ -77,7 +77,7 @@ SELECT A From B;
 ```
 **Linter Output**
 ```
-In line 6, column 10: All keywords should be either uppercase or lowercase [consistent-letter-case]
+In line 6, column 10: All keywords should be uppercase [consistent-letter-case]
 ```
 ## consistent-comment-style
 SQL engines support different styles of single-line comments: '#', '//', and '--'. Only one of them should be used consistently.

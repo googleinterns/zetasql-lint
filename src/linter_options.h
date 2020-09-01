@@ -17,12 +17,21 @@
 #ifndef SRC_LINTER_OPTIONS_H_
 #define SRC_LINTER_OPTIONS_H_
 
+// This class is for any options that checks will use.
+// Adding configurable option have this steps:
+//    1. Create the variable, along with its UpperCamelCase
+//       getter and setter functions. (Follow the convention.)
+//    2. Add the variable to the 'config.proto' file.
+//    3. Connect proto and option from linter.cc/GetOptionsFromConfig()
+//    4. Update the documentation.
+// This class can also contain other helper varibles that are used in checks.
+
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "src/lint_errors.h"
+#include "src/lint_error.h"
 
 namespace zetasql::linter {
 
@@ -83,10 +92,16 @@ class LinterOptions {
   }
 
   // Getter for single_quote_.
-  char SingleQuote() const { return single_quote_; }
+  bool SingleQuote() const { return single_quote_; }
 
   // Setter for single_quote_.
-  void SetSingleQuote(char single_quote) { single_quote_ = single_quote; }
+  void SetSingleQuote(bool single_quote) { single_quote_ = single_quote; }
+
+  // Getter for all_upper_.
+  bool UpperKeyword() const { return upper_keyword_; }
+
+  // Setter for all_upper_.
+  void SetUpperKeyword(bool upper_keyword) { upper_keyword_ = upper_keyword; }
 
   // Changes if any lint is active from the start.
   void DisactivateCheck(ErrorCode code);
@@ -107,6 +122,9 @@ class LinterOptions {
 
   // True if user should use single quotes, false for double quotes.
   bool single_quote_ = true;
+
+  // True if all keywords should be all uppercase, false for all lowercase.
+  bool upper_keyword_ = true;
 
   // Whenever a lint check fails status message occurs. This variable
   // determines if status messages should be shown to the user.

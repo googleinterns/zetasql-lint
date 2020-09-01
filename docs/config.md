@@ -1,7 +1,7 @@
 # Config
 Some checks in ZetaSQL linter have configurable options which can be specified in a file contains config proto in text format. Disabling checks can also be done using configuration file.
 
-**Example Usage**
+**Example File**
 ```protobuf
 tab_size: 2;
 line_limit: 80;
@@ -15,5 +15,6 @@ nolint: ["parser-failed", "alias"];
 |string|end_line|'\n'|End line character used to separate lines|
 |int32|line_limit|100|Maximum number of characters one line should contain|
 |string|allowed_indent|' '(whitespace)|Allowed indentation character(usually ' ' or '\t')|
-|bool|single_quote|true|Whether single or double quote will used in sql file, checked by this [rule](config.md#single-or-double-quote)|
+|bool|single_quote|true|Whether single or double quote will used in sql file, checked by this [rule](checks.md#single-or-double-quote)|
+|bool|upper_keyword|true|Whether uppercase or lowercase letters will be used for keywords, checked by this [rule](checks.md#consistent-letter-case)|
 |string*|nolint|[]|List of [check names](checks.md) that will be disabled|

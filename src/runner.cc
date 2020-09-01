@@ -29,7 +29,7 @@
 #include "absl/strings/strip.h"
 #include "google/protobuf/text_format.h"
 #include "src/config.pb.h"
-#include "src/execute_linter.h"
+#include "src/linter.h"
 
 ABSL_FLAG(std::string, config, "",
           "A prototxt file having configuration options.");
@@ -68,8 +68,12 @@ bool HasValidExtension(std::string filename) {
                                             supported_extensions.end(), ", ");
 
   bool ok = false;
-  std::size_t last_dot = filename.find_last_of(".");
-  std::string extension = filename.substr(last_dot);
+  std::string extension = "";
+  // Find until last '.';
+  for (int i = filename.size() - 1; i >= 0; i--) {
+    extension = filename[i] + extension;
+    if (filename[i] == '.') break;
+  }
 
   for (std::string supported_extension : supported_extensions)
     if (supported_extension == extension) ok = true;
@@ -95,7 +99,6 @@ void quick_run(Config config) {
     str += "\n";
     if (end) break;
   }
-  std::cout << " HMMM \n" << str << std::endl;
   zetasql::linter::LinterResult result =
       zetasql::linter::RunChecks(absl::string_view(str), config, "");
 
@@ -111,6 +114,7 @@ void run(std::vector<std::string> sql_files, Config config) {
       continue;
     }
     std::string str = ReadFile(filename);
+    PrintASTTree(str);
     LinterResult result = RunChecks(absl::string_view(str), config, filename);
 
     result.PrintResult();
@@ -130,12 +134,11 @@ int main(int argc, char* argv[]) {
   std::vector<std::string> sql_files;
   for (char* file : absl::ParseCommandLine(argc, argv))
     sql_files.push_back(std::string(file));
-
   std::string config_file = absl::GetFlag(FLAGS_config);
   bool quick = absl::GetFlag(FLAGS_quick);
 
   zetasql::linter::Config config =
-      zetasql::linter::ReadFromConfigFile(config_file.c_str());
+      zetasql::linter::ReadFromConfigFile(config_file);
 
   if (quick)
     zetasql::linter::quick_run(config);
