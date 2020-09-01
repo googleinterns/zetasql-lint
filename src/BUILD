@@ -148,6 +148,7 @@ cc_test(
     deps = [
         ":checks",
         ":checks_list",
+        ":checks_util",
         ":lint_error",
         ":linter_options",
         "@com_google_googletest//:gtest_main",

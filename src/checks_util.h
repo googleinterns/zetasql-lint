@@ -42,8 +42,8 @@ class RuleVisitor : public NonRecursiveParseTreeVisitor {
   RuleVisitor(const std::function<LinterResult(const ASTNode *,
                                                const absl::string_view &,
                                                const LinterOptions &)> &rule,
-              const absl::string_view &sql, const LinterOptions &option)
-      : rule_(rule), sql_(sql), option_(option), result_(absl::OkStatus()) {}
+              const absl::string_view &sql, const LinterOptions &options)
+      : rule_(rule), sql_(sql), option_(options), result_(absl::OkStatus()) {}
 
   // It is a function that will be invoked each time a new
   // node is visited.
@@ -73,7 +73,7 @@ class ASTNodeRule {
       : rule_(rule) {}
 
   // It applies the rule stored in this class to a sql statement.
-  LinterResult ApplyTo(absl::string_view sql, const LinterOptions &option);
+  LinterResult ApplyTo(absl::string_view sql, const LinterOptions &options);
 
  private:
   std::function<LinterResult(const ASTNode *, const absl::string_view &,
@@ -122,18 +122,18 @@ bool IsTheSame(const ASTNode *node, const ParseToken &token);
 // Ignores forward spaces and increase the position until the first non-empty
 // character. (empty characters: ' ', '\t', '\n')
 // Returns true if position reaches to the end.
-bool IgnoreForwardSpaces(absl::string_view sql, int *position);
+bool IgnoreSpacesForward(absl::string_view sql, int *position);
 
 // Ignores backward spaces and decrease the position until the first non-empty
 // character. (empty characters: ' ', '\t', '\n')
 // Returns true if position reaches to the end.
-bool IgnoreBackwardSpaces(absl::string_view sql, int *position);
+bool IgnoreSpacesBackward(absl::string_view sql, int *position);
 
 // Given a position in a sql file, checks if any comment
 // starts from that position. If it is, sets position to the end of
 // that comment(such that one character afterwards is unrelated to the comment),
 // does nothing otherwise.
-bool IgnoreComments(absl::string_view sql, const LinterOptions option,
+bool IgnoreComments(absl::string_view sql, const LinterOptions options,
                     int *position, bool ignore_single_line = true);
 
 // String version of 'IgnoreComments'.
@@ -160,9 +160,9 @@ bool OneLineStatement(absl::string_view line);
 // or all lowercase letters.
 bool ConsistentUppercaseLowercase(const absl::string_view &sql,
                                   const ParseLocationRange &range,
-                                  const LinterOptions &option);
+                                  const LinterOptions &options);
 
-// Return all tokenizer keywords of a sql query.
+// Returns all tokenizer keywords of a sql query.
 // They will be returned sorted in ascending position order.
 std::vector<ParseToken> GetKeywords(absl::string_view sql);
 
@@ -173,7 +173,7 @@ void GetIdentifiers(const ASTNode *node, std::vector<const ASTNode *> *list);
 // Gets all identifiers from previously parsed AST.
 // Return empty vector if options doesn't have previously parsed AST.
 std::vector<const ASTNode *> GetIdentifiers(absl::string_view sql,
-                                            const LinterOptions &option);
+                                            const LinterOptions &options);
 
 }  // namespace zetasql::linter
 

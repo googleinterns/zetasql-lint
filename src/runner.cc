@@ -35,11 +35,10 @@ ABSL_FLAG(std::string, config, "",
           "A prototxt file having configuration options.");
 
 ABSL_FLAG(bool, quick, false,
-          "This flag will read from standart input. It will read one"
+          "Read from standart input. It will read one"
           "statement and continue until reading semicolon ';'");
 
-ABSL_FLAG(bool, debug, false,
-          "This flag will show ASTTree for debug purposes.");
+ABSL_FLAG(bool, parsed_ast, false, "Print parsed AST for the input queries.");
 
 namespace zetasql::linter {
 namespace {
@@ -109,7 +108,7 @@ void quick_run(Config config) {
 }
 
 void run(std::vector<std::string> sql_files, Config config) {
-  bool debug = absl::GetFlag(FLAGS_debug);
+  bool debug = absl::GetFlag(FLAGS_parsed_ast);
   bool runner = true;
   for (std::string filename : sql_files) {
     // The first argument is './runner'.
@@ -128,7 +127,18 @@ void run(std::vector<std::string> sql_files, Config config) {
 }  // namespace
 }  // namespace zetasql::linter
 
+class B {
+ public:
+ private:
+  std::vector<std::unique_ptr<bool>> v;
+};
+
+void ff(const B& a) {}
+
 int main(int argc, char* argv[]) {
+  B a;
+  ff(a);
+  // std::function<int(const B &)>> x;
   if (argc < 2) {
     std::cerr << "Usage: ./runner --config=<config_file> <file_names>\n"
               << std::endl;

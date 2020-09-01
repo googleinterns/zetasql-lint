@@ -38,7 +38,7 @@ TEST(ChecksListTest, SizeMatch) {
 }
 
 TEST(NolintTest, MultipleDisabling) {
-  LinterOptions option;
+  LinterOptions options;
   absl::string_view sql =
       "Select 3 a;\n-- NOLINT ( alias, consistent-letter-case)\n"  // Both fail.
       "SELEcT 3 a;\n--LINT(alias)\n"                               // Both ok.
@@ -63,23 +63,26 @@ TEST(NolintTest, MultipleDisabling) {
 }
 
 TEST(LinterTest, StatementValidityCheck) {
-  LinterOptions option;
-  EXPECT_TRUE(CheckParserSucceeds("SELECT 5+2", &option).ok());
-  EXPECT_FALSE(CheckParserSucceeds("SELECT 5+2 sss ddd", &option).ok());
+  LinterOptions options;
+  // AST of successful parser calls will be accumulated in options
+  // but it will never be used, and deleted after this test ends.
+
+  EXPECT_TRUE(CheckParserSucceeds("SELECT 5+2", &options).ok());
+  EXPECT_FALSE(CheckParserSucceeds("SELECT 5+2 sss ddd", &options).ok());
 
   EXPECT_TRUE(CheckParserSucceeds(
-                  "SELECT * FROM emp where b = a or c < d group by x", &option)
+                  "SELECT * FROM emp where b = a or c < d group by x", &options)
                   .ok());
 
   EXPECT_TRUE(
       CheckParserSucceeds(
-          "SELECT e, sum(f) FROM emp where b = a or c < d group by x", &option)
+          "SELECT e, sum(f) FROM emp where b = a or c < d group by x", &options)
           .ok());
 
   EXPECT_FALSE(
-      CheckParserSucceeds("SELET A FROM B\nSELECT C FROM D", &option).ok());
+      CheckParserSucceeds("SELET A FROM B\nSELECT C FROM D", &options).ok());
 
-  EXPECT_FALSE(CheckParserSucceeds("SELECT 1; SELECT 2 3 4;", &option).ok());
+  EXPECT_FALSE(CheckParserSucceeds("SELECT 1; SELECT 2 3 4;", &options).ok());
 }
 
 }  // namespace

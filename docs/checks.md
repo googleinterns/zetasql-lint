@@ -339,7 +339,7 @@ In line 2, column 15: Use COUNT(*) instead of COUNT(1) [count-star]
 ```
 
 ## keyword-identifier
-If the name of an identifier(column name, parameter name etc.) is also a SQL keyword. Change the name or use escape characters(`).
+Do not use ZetaSQL keywords as identifiers (aliases, function arguments, etc.). Change the name or escape with backticks (`).
 
 **Example**
 ```sql
@@ -354,6 +354,6 @@ SELECT `type` FROM A; -- line 7
 
 **Linter Output**
 ```
-In line 2, column 31: Identifier `Date` is an SQL keyword. Use escape charater(`) to fix it [keyword-identifier]
-In line 6, column 8: Identifier `type` is an SQL keyword. Use escape charater(`) to fix it [keyword-identifier]
+In line 2, column 31: Identifier `Date` is an SQL keyword. Change the name or escape with backticks (`) [keyword-identifier]
+In line 6, column 8: Identifier `type` is an SQL keyword. Change the name or escape with backticks (`) [keyword-identifier]
 ```

@@ -53,61 +53,63 @@ namespace zetasql::linter {
 // Checks if the number of characters in any line
 // exceed a certain treshold.
 LinterResult CheckLineLength(absl::string_view sql,
-                             const LinterOptions &option);
+                             const LinterOptions &options);
 
 // Checks whether every statement ends with a semicolon ';'.
-LinterResult CheckSemicolon(absl::string_view sql, const LinterOptions &option);
+LinterResult CheckSemicolon(absl::string_view sql,
+                            const LinterOptions &options);
 
 // Checks whether all keywords are uppercase.
 LinterResult CheckUppercaseKeywords(absl::string_view sql,
-                                    const LinterOptions &option);
+                                    const LinterOptions &options);
 
 // Check if comment style is uniform (either -- or //, not both).
 LinterResult CheckCommentType(absl::string_view sql,
-                              const LinterOptions &option);
+                              const LinterOptions &options);
 
 // Checks whether all aliases denoted by 'AS' keyword.
 LinterResult CheckAliasKeyword(absl::string_view sql,
-                               const LinterOptions &option);
+                               const LinterOptions &options);
 
 // Checks whether all tab characters in indentations are equal to
 // <allowed_indent>.
 LinterResult CheckTabCharactersUniform(absl::string_view sql,
-                                       const LinterOptions &option);
+                                       const LinterOptions &options);
 
 // Checks whether there are no tabs in the code except indents.
 LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
-                                            const LinterOptions &option);
+                                            const LinterOptions &options);
 
 // Checks if single/double quote usage conflicts with configuration.
 LinterResult CheckSingleQuotes(absl::string_view sql,
-                               const LinterOptions &option);
+                               const LinterOptions &options);
 
 // Checks if any of naming conventions is not satisfied. Details of naming
 // convenstion can be found in docs/checks.md#naming
-LinterResult CheckNames(absl::string_view sql, const LinterOptions &option);
+LinterResult CheckNames(absl::string_view sql, const LinterOptions &options);
 
 // Checks if any of Join statement has missing indicator(LEFT, INNER, etc.)
-LinterResult CheckJoin(absl::string_view sql, const LinterOptions &option);
+LinterResult CheckJoin(absl::string_view sql, const LinterOptions &options);
 
 // Checks if PROTO imports and MODULE imports are consequtive among themselves.
 // Also checks if there is a dublicate import.
-LinterResult CheckImports(absl::string_view sql, const LinterOptions &option);
+LinterResult CheckImports(absl::string_view sql, const LinterOptions &options);
 
 // Checks if any complex expression is without parantheses.
 LinterResult CheckExpressionParantheses(absl::string_view sql,
-                                        const LinterOptions &option);
+                                        const LinterOptions &options);
 
 // Checks if count(1) is used instead of count(*)
-LinterResult CheckCountStar(absl::string_view sql, const LinterOptions &option);
+LinterResult CheckCountStar(absl::string_view sql,
+                            const LinterOptions &options);
 
 // Checks if any identifier is named as a keyword (date, type, language, etc.)
 LinterResult CheckKeywordNamedIdentifier(absl::string_view sql,
-                                         const LinterOptions &option);
+                                         const LinterOptions &options);
 
 // Checks if table names are specified in a query containing "JOIN".
 LinterResult CheckSpecifyTable(absl::string_view sql,
-                               const LinterOptions &option);
+                               const LinterOptions &options);
 }  // namespace zetasql::linter
 
 #endif  // SRC_CHECKS_H_

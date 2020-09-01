@@ -55,7 +55,7 @@ LinterResult CheckParserSucceeds(absl::string_view sql, LinterOptions* options);
 LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename);
 
 // It runs all linter checks
-LinterResult RunChecks(absl::string_view sql, LinterOptions option);
+LinterResult RunChecks(absl::string_view sql, LinterOptions options);
 
 // It runs all linter checks
 LinterResult RunChecks(absl::string_view sql, Config config,

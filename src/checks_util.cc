@@ -39,8 +39,8 @@ namespace zetasql::linter {
 
 absl::string_view GetName(const ParseLocationRange &range,
                           const absl::string_view &sql) {
-  const int &start = range.start().GetByteOffset();
-  const int &end = range.end().GetByteOffset();
+  const int start = range.start().GetByteOffset();
+  const int end = range.end().GetByteOffset();
   return sql.substr(start, end - start);
 }
 
@@ -101,13 +101,10 @@ bool IsBefore(const ASTNode *node, const ParseToken &token) {
 }
 
 bool IsTheSame(const ASTNode *node, const ParseToken &token) {
-  return node->GetParseLocationRange().start().GetByteOffset() ==
-             token.GetLocationRange().start().GetByteOffset() &&
-         node->GetParseLocationRange().end().GetByteOffset() ==
-             token.GetLocationRange().end().GetByteOffset();
+  return node->GetParseLocationRange() == token.GetLocationRange();
 }
 
-bool IgnoreForwardSpaces(absl::string_view sql, int *position) {
+bool IgnoreSpacesForward(absl::string_view sql, int *position) {
   int &i = *position;
   while (i < static_cast<int>(sql.size()) &&
          (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n'))
@@ -115,13 +112,13 @@ bool IgnoreForwardSpaces(absl::string_view sql, int *position) {
   return i >= static_cast<int>(sql.size());
 }
 
-bool IgnoreBackwardSpaces(absl::string_view sql, int *position) {
+bool IgnoreSpacesBackward(absl::string_view sql, int *position) {
   int &i = *position;
   while (i >= 0 && (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n')) i--;
   return i < 0;
 }
 
-bool IgnoreComments(absl::string_view sql, const LinterOptions option,
+bool IgnoreComments(absl::string_view sql, const LinterOptions options,
                     int *position, bool ignore_single_line) {
   int &i = *position;
   // Ignore multiline comments.
@@ -143,7 +140,7 @@ bool IgnoreComments(absl::string_view sql, const LinterOptions option,
                                     (sql[i] == '/' && sql[i - 1] == '/')))) {
       // Ignore the line.
       while (i < static_cast<int>(sql.size()) &&
-             sql[i] != option.LineDelimeter()) {
+             sql[i] != options.LineDelimeter()) {
         ++i;
       }
       return 1;
@@ -237,7 +234,7 @@ bool OneLineStatement(absl::string_view line) {
 
 bool ConsistentUppercaseLowercase(const absl::string_view &sql,
                                   const ParseLocationRange &range,
-                                  const LinterOptions &option) {
+                                  const LinterOptions &options) {
   bool uppercase = false;
   bool lowercase = false;
   for (int i = range.start().GetByteOffset(); i < range.end().GetByteOffset();
@@ -247,15 +244,15 @@ bool ConsistentUppercaseLowercase(const absl::string_view &sql,
   }
   // There shouldn't be any case any Keyword
   // contains both uppercase and lowercase characters
-  if (option.UpperKeyword()) return !lowercase;
+  if (options.UpperKeyword()) return !lowercase;
   return !uppercase;
 }
 
 LinterResult ASTNodeRule::ApplyTo(absl::string_view sql,
-                                  const LinterOptions &option) {
-  RuleVisitor visitor(rule_, sql, option);
-  if (option.RememberParser()) {
-    for (auto output : option.ParserOutputs()) {
+                                  const LinterOptions &options) {
+  RuleVisitor visitor(rule_, sql, options);
+  if (options.RememberParser()) {
+    for (auto output : options.ParserOutputs()) {
       absl::Status status = output->statement()->TraverseNonRecursive(&visitor);
       if (!status.ok()) return LinterResult(status);
     }
@@ -294,14 +291,9 @@ std::vector<ParseToken> GetKeywords(absl::string_view sql) {
       GetParseTokens(ParseTokenOptions(), &location, &parse_tokens);
 
   if (!status.ok()) return keywords;
-  for (auto &token : parse_tokens)
+  for (auto &token : parse_tokens) {
     if (token.kind() == ParseToken::KEYWORD) keywords.push_back(token);
-
-  sort(keywords.begin(), keywords.end(),
-       [&](const ParseToken &a, const ParseToken &b) {
-         return a.GetLocationRange().start().GetByteOffset() <
-                b.GetLocationRange().start().GetByteOffset();
-       });
+  }
 
   return keywords;
 }
@@ -313,10 +305,10 @@ void GetIdentifiers(const ASTNode *node, std::vector<const ASTNode *> *list) {
 }
 
 std::vector<const ASTNode *> GetIdentifiers(absl::string_view sql,
-                                            const LinterOptions &option) {
+                                            const LinterOptions &options) {
   std::vector<const ASTNode *> identifiers;
-  if (option.RememberParser()) {
-    for (auto node : option.ParserOutputs())
+  if (options.RememberParser()) {
+    for (auto node : options.ParserOutputs())
       GetIdentifiers(node->statement(), &identifiers);
   } else {
     std::unique_ptr<ParserOutput> output;
