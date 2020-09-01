@@ -127,7 +127,18 @@ void run(std::vector<std::string> sql_files, Config config) {
 }  // namespace
 }  // namespace zetasql::linter
 
+class B {
+ public:
+ private:
+ int a;
+  std::vector<std::unique_ptr<bool>> v;
+};
+
+void ff(const B& a) {}
+
 int main(int argc, char* argv[]) {
+  B a;
+  
   if (argc < 2) {
     std::cerr << "Usage: ./runner --config=<config_file> <file_names>\n"
               << std::endl;

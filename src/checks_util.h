@@ -133,7 +133,7 @@ bool IgnoreSpacesBackward(absl::string_view sql, int *position);
 // starts from that position. If it is, sets position to the end of
 // that comment(such that one character afterwards is unrelated to the comment),
 // does nothing otherwise.
-bool IgnoreComments(absl::string_view sql, const LinterOptions options,
+bool IgnoreComments(absl::string_view sql, const LinterOptions &options,
                     int *position, bool ignore_single_line = true);
 
 // String version of 'IgnoreComments'.

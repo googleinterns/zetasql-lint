@@ -69,14 +69,14 @@ class LinterOptions {
   void Enable(ErrorCode code, int position);
 
   // Adds a single parser output to parset_output_
-  void AddParserOutput(ParserOutput *output);
+  void AddParserOutput(std::unique_ptr<ParserOutput> output);
 
   // Changes if any lint is active from the start.
-  void DisactivateCheck(ErrorCode code);
+  void DisableCheck(ErrorCode code);
 
   // ---------------------------------- GETTER/SETTER functions
 
-  const std::vector<ParserOutput *> &ParserOutputs() const {
+  const std::vector<std::unique_ptr<ParserOutput>> &ParserOutputs() const {
     return parser_outputs_;
   }
 
@@ -134,7 +134,7 @@ class LinterOptions {
   bool remember_parser_ = false;
 
   // If remember_parser_ is enabled, this will hold parser output.
-  std::vector<ParserOutput *> parser_outputs_;
+  std::vector<std::unique_ptr<ParserOutput>> parser_outputs_;
 
   // Name of the sql file.
   absl::string_view filename_ = "";

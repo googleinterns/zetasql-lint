@@ -129,69 +129,67 @@ LinterResult CheckParserSucceeds(absl::string_view sql,
         return result;
       }
     }
-    options->AddParserOutput(output.release());
+    options->AddParserOutput(std::move(output));
   }
 
   options->SetRememberParser(true);
   return result;
 }
 
-LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename) {
-  LinterOptions options(filename);
-  if (config.has_tab_size()) options.SetTabSize(config.tab_size());
+void GetOptionsFromConfig(Config config, LinterOptions *options) {
+  if (config.has_tab_size()) options->SetTabSize(config.tab_size());
 
-  if (config.has_end_line()) options.SetLineDelimeter(config.end_line()[0]);
+  if (config.has_end_line()) options->SetLineDelimeter(config.end_line()[0]);
 
-  if (config.has_line_limit()) options.SetLineLimit(config.line_limit());
+  if (config.has_line_limit()) options->SetLineLimit(config.line_limit());
 
   if (config.has_allowed_indent())
-    options.SetAllowedIndent(config.allowed_indent()[0]);
+    options->SetAllowedIndent(config.allowed_indent()[0]);
 
-  if (config.has_single_quote()) options.SetSingleQuote(config.single_quote());
+  if (config.has_single_quote()) options->SetSingleQuote(config.single_quote());
 
   if (config.has_upper_keyword())
-    options.SetUpperKeyword(config.upper_keyword());
+    options->SetUpperKeyword(config.upper_keyword());
 
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
   for (std::string check_name : config.nolint()) {
     if (error_map.count(check_name)) {
-      options.DisactivateCheck(error_map[check_name]);
+      options->DisableCheck(error_map[check_name]);
     }
   }
-
-  return options;
 }
 
-LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
+LinterResult RunChecks(absl::string_view sql, LinterOptions* options) {
   ChecksList list = GetAllChecks();
-  LinterResult result = ParseNoLintComments(sql, &options);
-  result.SetFilename(options.Filename());
+  LinterResult result = ParseNoLintComments(sql, options);
+  result.SetFilename(options->Filename());
 
   // This check should come strictly before others, and able to
   // change options.
-  result.Add(CheckParserSucceeds(sql, &options));
+  result.Add(CheckParserSucceeds(sql, options));
 
   for (auto check : list.GetList()) {
-    result.Add(check(sql, options));
+    result.Add(check(sql, *options));
   }
   return result;
 }
 
 LinterResult RunChecks(absl::string_view sql, Config config,
                        absl::string_view filename) {
-  LinterOptions options = GetOptionsFromConfig(config, filename);
-  return RunChecks(sql, options);
+  LinterOptions options(filename);
+  GetOptionsFromConfig(config, &options);
+  return RunChecks(sql, &options);
 }
 
 LinterResult RunChecks(absl::string_view sql, absl::string_view filename) {
   LinterOptions options(filename);
-  return RunChecks(sql, options);
+  return RunChecks(sql, &options);
 }
 
 LinterResult RunChecks(absl::string_view sql) {
   LinterOptions options;
-  return RunChecks(sql, options);
+  return RunChecks(sql, &options);
 }
 
 }  // namespace zetasql::linter

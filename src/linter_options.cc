@@ -37,11 +37,11 @@ void LinterOptions::Enable(ErrorCode code, int position) {
   option_map_[code].Enable(position);
 }
 
-void LinterOptions::AddParserOutput(ParserOutput* output) {
-  parser_outputs_.push_back(output);
+void LinterOptions::AddParserOutput(std::unique_ptr<ParserOutput> output) {
+  parser_outputs_.push_back(std::move(output));
 }
 
-void LinterOptions::DisactivateCheck(ErrorCode code) {
+void LinterOptions::DisableCheck(ErrorCode code) {
   if (!option_map_.count(code)) option_map_[code] = CheckOptions();
   option_map_[code].SetActiveStart(false);
 }

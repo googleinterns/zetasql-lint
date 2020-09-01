@@ -118,7 +118,7 @@ bool IgnoreSpacesBackward(absl::string_view sql, int *position) {
   return i < 0;
 }
 
-bool IgnoreComments(absl::string_view sql, const LinterOptions options,
+bool IgnoreComments(absl::string_view sql, const LinterOptions &options,
                     int *position, bool ignore_single_line) {
   int &i = *position;
   // Ignore multiline comments.
@@ -252,7 +252,7 @@ LinterResult ASTNodeRule::ApplyTo(absl::string_view sql,
                                   const LinterOptions &options) {
   RuleVisitor visitor(rule_, sql, options);
   if (options.RememberParser()) {
-    for (auto output : options.ParserOutputs()) {
+    for (auto &output : options.ParserOutputs()) {
       absl::Status status = output->statement()->TraverseNonRecursive(&visitor);
       if (!status.ok()) return LinterResult(status);
     }
@@ -308,7 +308,7 @@ std::vector<const ASTNode *> GetIdentifiers(absl::string_view sql,
                                             const LinterOptions &options) {
   std::vector<const ASTNode *> identifiers;
   if (options.RememberParser()) {
-    for (auto node : options.ParserOutputs())
+    for (auto &node : options.ParserOutputs())
       GetIdentifiers(node->statement(), &identifiers);
   } else {
     std::unique_ptr<ParserOutput> output;
