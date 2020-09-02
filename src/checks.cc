@@ -72,7 +72,7 @@ LinterResult CheckSemicolon(absl::string_view sql,
   bool last = false;
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
     if (IgnoreComments(sql, options, &i)) continue;
-    if (sql[i] == ' ' || sql[i] == '\t' || sql[i] == options.LineDelimeter())
+    if (absl::ascii_isspace(sql[i]))
       continue;
     if (sql[i] == ';') {
       last = 1;
