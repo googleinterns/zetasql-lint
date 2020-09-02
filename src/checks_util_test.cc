@@ -58,7 +58,7 @@ TEST(CheckUtilTest, IgnoreCommentsCheck) {
   int position = 0;
   absl::string_view str = "A /*comment*/\nsecond line";
   EXPECT_FALSE(IgnoreComments(str, options, &position));
-  position = 3;
+  position = 2;
   EXPECT_TRUE(IgnoreComments(str, options, &position));
   EXPECT_EQ(position, 12);
   EXPECT_EQ(str[position + 1], '\n');
@@ -66,7 +66,7 @@ TEST(CheckUtilTest, IgnoreCommentsCheck) {
   position = 0;
   str = "A --comment--\nsecond line";
   EXPECT_FALSE(IgnoreComments(str, options, &position));
-  position = 3;
+  position = 2;
   EXPECT_FALSE(IgnoreComments(str, options, &position, false));
   EXPECT_TRUE(IgnoreComments(str, options, &position));
   EXPECT_EQ(position, 13);
