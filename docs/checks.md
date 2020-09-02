@@ -197,7 +197,7 @@ In line 2, column 8: Use double quotes(") instead of single quotes(') [single-or
 In a sql file each name should follow a specific convention.
 
 | Type | Check Names | Recommendation |
-|--------|----------------------------------------|
+|------|-------------|----------------|
 |Table Names|table-name| UpperCamelCase, e.g. `CREATE TABLE MyTable`|
 |Window Names|window-name| UpperCamelCase, e.g. `OrderedCategory` |
 |User-Defined Functions|function-name|UpperCamelCase, e.g. `CREATE PUBLIC FUNCTION MyFunction`|
