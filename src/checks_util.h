@@ -81,15 +81,11 @@ class ASTNodeRule {
       rule_;
 };
 
-// It will return the corresponding string of a range in a sql.
-absl::string_view GetName(const ParseLocationRange &range,
-                          const absl::string_view &sql);
-
 // Given an ASTNode returns corresponding string for that node.
 absl::string_view GetNodeString(const ASTNode *node,
                                 const absl::string_view &sql);
 
-// Return start position of an ASTNode.
+// Returns start position of an ASTNode.
 int GetStartPosition(const ASTNode &node);
 
 // Checks if a character is uppercase.

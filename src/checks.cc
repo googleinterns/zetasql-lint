@@ -69,10 +69,21 @@ LinterResult CheckLineLength(absl::string_view sql,
 LinterResult CheckSemicolon(absl::string_view sql,
                             const LinterOptions &options) {
   LinterResult result;
-  int location = static_cast<int>(sql.size()) - 1;
-  if (!IgnoreSpacesBackward(sql, &location) && sql[location] != ';')
-    if (options.IsActive(ErrorCode::kSemicolon, location))
-      result.Add(ErrorCode::kSemicolon, sql, location,
+  bool last = false;
+  for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
+    if (IgnoreStrings(sql, &i)) continue;
+    if (IgnoreComments(sql, options, &i)) continue;
+    if (sql[i] == ' ' || sql[i] == '\t' || sql[i] == options.LineDelimeter())
+      continue;
+    if (sql[i] == ';') {
+      last = 1;
+    } else {
+      last = 0;
+    }
+  }
+  if (!last)
+    if (options.IsActive(ErrorCode::kSemicolon, sql.size() - 1))
+      result.Add(ErrorCode::kSemicolon, sql, sql.size() - 1,
                  "Each statement should end with a "
                  "semicolon ';'.");
   return result;

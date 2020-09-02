@@ -37,16 +37,11 @@
 
 namespace zetasql::linter {
 
-absl::string_view GetName(const ParseLocationRange &range,
-                          const absl::string_view &sql) {
-  const int start = range.start().GetByteOffset();
-  const int end = range.end().GetByteOffset();
-  return sql.substr(start, end - start);
-}
-
 absl::string_view GetNodeString(const ASTNode *node,
                                 const absl::string_view &sql) {
-  return GetName(node->GetParseLocationRange(), sql);
+  const int start = node->GetParseLocationRange().start().GetByteOffset();
+  const int end = node->GetParseLocationRange().end().GetByteOffset();
+  return sql.substr(start, end - start);
 }
 
 int GetStartPosition(const ASTNode &node) {
@@ -129,11 +124,12 @@ bool IgnoreComments(absl::string_view sql, const LinterOptions &options,
                     int *position, bool ignore_single_line) {
   int &i = *position;
   // Ignore multiline comments.
-  if (i > 0 && sql[i - 1] == '/' && sql[i] == '*') {
+  if (i + 1 < static_cast<int>(sql.size()) &&
+      (sql[i] == '/' && sql[i + 1] == '*')) {
     // It will start checking after '/*' and after the iteration
     // finished, the pointer 'i' will be just after '*/' (incrementation
     // from the for statement is included).
-    i += 2;
+    i += 3;
     while (i < static_cast<int>(sql.size()) &&
            !(sql[i - 1] == '*' && sql[i] == '/')) {
       ++i;
@@ -143,8 +139,9 @@ bool IgnoreComments(absl::string_view sql, const LinterOptions &options,
 
   if (ignore_single_line) {
     // Ignore single line comments.
-    if (sql[i] == '#' || (i > 0 && ((sql[i] == '-' && sql[i - 1] == '-') ||
-                                    (sql[i] == '/' && sql[i - 1] == '/')))) {
+    if (sql[i] == '#' || (i + 1 < static_cast<int>(sql.size()) &&
+                          ((sql[i] == '-' && sql[i + 1] == '-') ||
+                           (sql[i] == '/' && sql[i + 1] == '/')))) {
       // Ignore the line.
       while (i < static_cast<int>(sql.size()) &&
              sql[i] != options.LineDelimeter()) {
@@ -298,8 +295,8 @@ std::vector<ParseToken> GetKeywords(absl::string_view sql, ErrorCode code) {
       GetParseTokens(ParseTokenOptions(), &location, &parse_tokens);
 
   if (!status.ok()) {
-    std::cout << "Tokenizer Failed for check [" << code
-              << "]: " << status.message() << std::endl;
+    std::cout << "Skipping check [" << code
+              << "] due to tokenizer error: " << status.message();
     return keywords;
   }
   for (auto &token : parse_tokens) {
