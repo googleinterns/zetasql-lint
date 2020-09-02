@@ -60,6 +60,7 @@ TEST(LinterTest, SemicolonCheck) {
   EXPECT_TRUE(CheckSemicolon("\nSELECT 4+6\n\n; -- comment", options).ok());
   EXPECT_TRUE(CheckSemicolon("SELECT 3+5 /*comment*/ ; \n", options).ok());
   EXPECT_TRUE(CheckSemicolon("SELECT 3+5 ; /*comment*/ \n", options).ok());
+  EXPECT_FALSE(CheckSemicolon("SELECT 3+5 -- comment; \n", options).ok());
 
   EXPECT_FALSE(CheckSemicolon("SELECT 3+5;  \nSELECT 4+6", options).ok());
   EXPECT_FALSE(CheckSemicolon("SELECT 3+5  ;  \nSELECT 4+6", options).ok());
