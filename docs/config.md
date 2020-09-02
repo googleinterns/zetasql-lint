@@ -15,6 +15,6 @@ nolint: ["parser-failed", "alias"];
 |string|end_line|'\n'|End line character used to separate lines|
 |int32|line_limit|100|Maximum number of characters one line should contain|
 |string|allowed_indent|' '(whitespace)|Allowed indentation character(usually ' ' or '\t')|
-|bool|single_quote|true|Whether single or double quote will used in sql file, checked by this [rule](checks.md#single-or-double-quote)|
+|bool|single_quote|true|Whether single or double quote will be used in sql file, checked by this [rule](checks.md#single-or-double-quote)|
 |bool|upper_keyword|true|Whether uppercase or lowercase letters will be used for keywords, checked by this [rule](checks.md#consistent-letter-case)|
 |string*|nolint|[]|List of [check names](checks.md) that will be disabled|

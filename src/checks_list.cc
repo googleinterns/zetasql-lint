@@ -37,15 +37,16 @@ ChecksList GetParserDependantChecks() {
   ChecksList list;
   list.Add(CheckSemicolon);
   list.Add(CheckAliasKeyword);
+  list.Add(CheckUppercaseKeywords);
   list.Add(CheckNames);
   list.Add(CheckJoin);
+  list.Add(CheckExpressionParantheses);
   return list;
 }
 
 ChecksList GetAllChecks() {
   ChecksList list;
   list.Add(CheckLineLength);
-  list.Add(CheckParserSucceeds);
   list.Add(CheckSemicolon);
   list.Add(CheckUppercaseKeywords);
   list.Add(CheckCommentType);
@@ -56,6 +57,9 @@ ChecksList GetAllChecks() {
   list.Add(CheckNames);
   list.Add(CheckJoin);
   list.Add(CheckImports);
+  list.Add(CheckExpressionParantheses);
+  list.Add(CheckCountStar);
+  list.Add(CheckKeywordNamedIdentifier);
   return list;
 }
 

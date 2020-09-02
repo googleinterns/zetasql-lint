@@ -54,21 +54,21 @@ TEST(CheckUtilTest, LetterCaseFunctionsCheck) {
 }
 
 TEST(CheckUtilTest, IgnoreCommentsCheck) {
-  LinterOptions option;
+  LinterOptions options;
   int position = 0;
   absl::string_view str = "A /*comment*/\nsecond line";
-  EXPECT_FALSE(IgnoreComments(str, option, &position));
-  position = 3;
-  EXPECT_TRUE(IgnoreComments(str, option, &position));
+  EXPECT_FALSE(IgnoreComments(str, options, &position));
+  position = 2;
+  EXPECT_TRUE(IgnoreComments(str, options, &position));
   EXPECT_EQ(position, 12);
   EXPECT_EQ(str[position + 1], '\n');
 
   position = 0;
   str = "A --comment--\nsecond line";
-  EXPECT_FALSE(IgnoreComments(str, option, &position));
-  position = 3;
-  EXPECT_FALSE(IgnoreComments(str, option, &position, false));
-  EXPECT_TRUE(IgnoreComments(str, option, &position));
+  EXPECT_FALSE(IgnoreComments(str, options, &position));
+  position = 2;
+  EXPECT_FALSE(IgnoreComments(str, options, &position, false));
+  EXPECT_TRUE(IgnoreComments(str, options, &position));
   EXPECT_EQ(position, 13);
   EXPECT_EQ(str[position + 1], 's');
 }

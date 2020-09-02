@@ -15,6 +15,7 @@
 //
 #include "src/checks.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -22,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
@@ -43,44 +45,17 @@
 // rules in the documention in 'docs/checks.md'.
 namespace zetasql::linter {
 
-LinterResult CheckParserSucceeds(absl::string_view sql,
-                                 const LinterOptions &option) {
-  std::unique_ptr<ParserOutput> output;
-
-  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
-
-  bool is_the_end = false;
-  int byte_position = 1;
-  LinterResult result;
-  while (!is_the_end) {
-    byte_position = location.byte_position();
-    absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
-                                                   &output, &is_the_end);
-    if (!status.ok()) {
-      if (option.IsActive(ErrorCode::kParseFailed, byte_position)) {
-        return LinterResult(status);
-        // ErrorLocation location = internal::GetPayload<ErrorLocation>(status);
-        result.Add(
-            ErrorCode::kParseFailed, sql, byte_position,
-            absl::StrCat("Parser Failed, with message ", status.message()));
-      }
-      break;
-    }
-  }
-  return result;
-}
-
 LinterResult CheckLineLength(absl::string_view sql,
-                             const LinterOptions &option) {
+                             const LinterOptions &options) {
   int line_size = 0;
   LinterResult result;
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
-    if (sql[i] == option.LineDelimeter()) {
-      if (line_size > option.LineLimit() &&
+    if (sql[i] == options.LineDelimeter()) {
+      if (line_size > options.LineLimit() &&
           !OneLineStatement(sql.substr(i - line_size, i))) {
-        if (option.IsActive(ErrorCode::kLineLimit, i))
+        if (options.IsActive(ErrorCode::kLineLimit, i))
           result.Add(ErrorCode::kLineLimit, sql, i,
-                     absl::StrCat("Lines should be <= ", option.LineLimit(),
+                     absl::StrCat("Lines should be <= ", options.LineLimit(),
                                   " characters long."));
       }
       line_size = 0;
@@ -92,76 +67,55 @@ LinterResult CheckLineLength(absl::string_view sql,
 }
 
 LinterResult CheckSemicolon(absl::string_view sql,
-                            const LinterOptions &option) {
-  // If parser is not active from config this check won't work.
-  if (!option.IsActive(ErrorCode::kParseFailed, -1)) return LinterResult();
+                            const LinterOptions &options) {
   LinterResult result;
-  std::unique_ptr<ParserOutput> output;
-
-  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
-  bool is_the_end = false;
-
-  while (!is_the_end) {
-    absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
-                                                   &output, &is_the_end);
-    if (!status.ok()) return LinterResult();
-    int location =
-        output->statement()->GetParseLocationRange().end().GetByteOffset();
-    while (location < sql.size() &&
-           (sql[location] == ' ' || sql[location] == option.LineDelimeter()))
-      location++;
-    if (location >= sql.size() || sql[location] != ';') {
-      if (option.IsActive(ErrorCode::kSemicolon, location))
-        result.Add(ErrorCode::kSemicolon, sql, location,
-                   "Each statement should end with a "
-                   "semicolon ';'.");
+  bool last = false;
+  for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
+    if (IgnoreComments(sql, options, &i)) continue;
+    if (absl::ascii_isspace(sql[i])) continue;
+    if (sql[i] == ';') {
+      last = 1;
+    } else {
+      last = 0;
     }
   }
+  if (!last)
+    if (options.IsActive(ErrorCode::kSemicolon, sql.size() - 1))
+      result.Add(ErrorCode::kSemicolon, sql, sql.size() - 1,
+                 "Each statement should end with a "
+                 "semicolon ';'.");
   return result;
 }
 
 LinterResult CheckUppercaseKeywords(absl::string_view sql,
-                                    const LinterOptions &option) {
-  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
-  std::vector<ParseToken> parse_tokens;
+                                    const LinterOptions &options) {
+  std::vector<ParseToken> keywords = GetKeywords(sql, ErrorCode::kLetterCase);
+  std::vector<const ASTNode *> identifiers = GetIdentifiers(sql, options);
   LinterResult result;
+  int index = 0;
+  for (auto &token : keywords) {
+    // Two pointer algorithm to reduce complexity O(N^2) to O(N)
+    while (index < identifiers.size() && IsBefore(identifiers[index], token))
+      index++;
 
-  absl::Status status =
-      GetParseTokens(ParseTokenOptions(), &location, &parse_tokens);
+    // Ignore the keyword token if it is an identifier.
+    if (index < identifiers.size() && IsTheSame(identifiers[index], token))
+      continue;
 
-  if (!status.ok()) return LinterResult(status);
-
-  // Some special words in tokenizer is defined as "Keyword",
-  // but linter shouldn't complain for them. The list can change easily, and
-  // every word in the list should be uppercase.
-  std::vector<std::string> nolint_words{"TIME", "DATE", "TRUE", "FALSE"};
-
-  // Keyword definition in tokenizer is very wide,
-  // it include some special characters like ';', '*', etc.
-  // Keyword Uppercase check will simply ignore characters
-  // outside of english lowercase letters.
-  for (auto &token : parse_tokens) {
-    if (token.kind() == ParseToken::KEYWORD) {
-      if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange(),
-                                        option)) {
-        bool nolint = false;
-        for (auto word : nolint_words)
-          if (token.GetSQL() == word) nolint = true;
-        if (nolint) continue;
-        int position = token.GetLocationRange().start().GetByteOffset();
-        if (option.IsActive(ErrorCode::kLetterCase, position))
-          result.Add(
-              ErrorCode::kLetterCase, sql, position,
-              absl::StrCat("All keywords should be ",
-                           option.UpperKeyword() ? "uppercase" : "lowercase"));
-      }
+    if (!ConsistentUppercaseLowercase(sql, token.GetLocationRange(), options)) {
+      int position = token.GetLocationRange().start().GetByteOffset();
+      if (options.IsActive(ErrorCode::kLetterCase, position))
+        result.Add(
+            ErrorCode::kLetterCase, sql, position,
+            absl::StrCat("Keyword '", token.GetImage(), "' should be all ",
+                         options.UpperKeyword() ? "uppercase" : "lowercase"));
     }
   }
   return result;
 }
 
 LinterResult CheckCommentType(absl::string_view sql,
-                              const LinterOptions &option) {
+                              const LinterOptions &options) {
   LinterResult result;
   bool dash_comment = false;
   bool slash_comment = false;
@@ -170,7 +124,7 @@ LinterResult CheckCommentType(absl::string_view sql,
 
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
     if (IgnoreStrings(sql, &i)) continue;
-    if (IgnoreComments(sql, option, &i, false)) continue;
+    if (IgnoreComments(sql, options, &i, false)) continue;
     absl::string_view type = "";
     if (i > 0 && sql[i - 1] == '-' && sql[i] == '-') type = "--";
     if (i > 0 && sql[i - 1] == '/' && sql[i] == '/') type = "//";
@@ -188,7 +142,7 @@ LinterResult CheckCommentType(absl::string_view sql,
       if (dash_comment + slash_comment + hash_comment == 1)
         first_type = type;
       else if (type != first_type &&
-               option.IsActive(ErrorCode::kCommentStyle, i))
+               options.IsActive(ErrorCode::kCommentStyle, i))
         result.Add(
             ErrorCode::kCommentStyle, sql, i,
             absl::StrCat("One line comments should be consistent, expected: ",
@@ -196,7 +150,7 @@ LinterResult CheckCommentType(absl::string_view sql,
 
       // Ignore the line.
       while (i < static_cast<int>(sql.size()) &&
-             sql[i] != option.LineDelimeter()) {
+             sql[i] != options.LineDelimeter()) {
         ++i;
       }
       continue;
@@ -207,39 +161,39 @@ LinterResult CheckCommentType(absl::string_view sql,
 }
 
 LinterResult CheckAliasKeyword(absl::string_view sql,
-                               const LinterOptions &option) {
+                               const LinterOptions &options) {
   // If parser is not active from config this check won't work.
-  if (!option.IsActive(ErrorCode::kParseFailed, -1)) return LinterResult();
+  if (!options.IsActive(ErrorCode::kParseFailed, -1)) return LinterResult();
   return ASTNodeRule([](const ASTNode *node, const absl::string_view &sql,
-                        const LinterOptions &option) -> LinterResult {
+                        const LinterOptions &options) -> LinterResult {
            LinterResult result;
            if (node->node_kind() == AST_ALIAS) {
-             int position =
-                 node->GetParseLocationRange().start().GetByteOffset();
-             std::string name = ConvertToUppercase(GetNodeString(node, sql));
-             if (name.substr(0, 2) != "AS") {
-               if (option.IsActive(ErrorCode::kAlias, position))
+             int position = GetStartPosition(*node);
+             const std::string name =
+                 ConvertToUppercase(GetNodeString(node, sql));
+             if (name.size() < 2 || !absl::StartsWith(name, "AS")) {
+               if (options.IsActive(ErrorCode::kAlias, position))
                  result.Add(ErrorCode::kAlias, sql, position,
                             "Always use AS keyword before aliases");
              }
            }
            return result;
          })
-      .ApplyTo(sql, option);
+      .ApplyTo(sql, options);
 }
 
 LinterResult CheckTabCharactersUniform(absl::string_view sql,
-                                       const LinterOptions &option) {
+                                       const LinterOptions &options) {
   bool is_indent = true;
   const char kSpace = ' ', kTab = '\t';
   LinterResult result;
 
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
-    if (sql[i] == option.LineDelimeter()) {
+    if (sql[i] == options.LineDelimeter()) {
       is_indent = true;
-    } else if (is_indent && sql[i] != option.AllowedIndent()) {
+    } else if (is_indent && sql[i] != options.AllowedIndent()) {
       if (sql[i] == kTab || sql[i] == kSpace) {
-        if (option.IsActive(ErrorCode::kUniformIndent, i))
+        if (options.IsActive(ErrorCode::kUniformIndent, i))
           result.Add(
               ErrorCode::kUniformIndent, sql, i,
               absl::StrCat("Inconsistent use of indentation symbols, "
@@ -254,19 +208,19 @@ LinterResult CheckTabCharactersUniform(absl::string_view sql,
 }
 
 LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
-                                            const LinterOptions &option) {
+                                            const LinterOptions &options) {
   const char kSpace = ' ', kTab = '\t';
 
   bool is_indent = true;
   LinterResult result;
 
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
-    if (sql[i] == option.LineDelimeter()) {
+    if (sql[i] == options.LineDelimeter()) {
       is_indent = true;
     } else if (sql[i] != kSpace && sql[i] != kTab) {
       is_indent = false;
     } else if (sql[i] == kTab && !is_indent) {
-      if (option.IsActive(ErrorCode::kNotIndentTab, i))
+      if (options.IsActive(ErrorCode::kNotIndentTab, i))
         result.Add(ErrorCode::kNotIndentTab, sql, i,
                    "Tab is not in the indentation");
     }
@@ -275,17 +229,17 @@ LinterResult CheckNoTabsBesidesIndentations(absl::string_view sql,
 }
 
 LinterResult CheckSingleQuotes(absl::string_view sql,
-                               const LinterOptions &option) {
+                               const LinterOptions &options) {
   LinterResult result;
 
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
-    if (IgnoreComments(sql, option, &i)) continue;
+    if (IgnoreComments(sql, options, &i)) continue;
 
     if (sql[i] == '\'' || sql[i] == '"') {
-      if ((option.SingleQuote() && sql[i] == '"')) {
+      if ((options.SingleQuote() && sql[i] == '"')) {
         result.Add(ErrorCode::kSingleQuote, sql, i,
                    "Use single quotes(') instead of double quotes(\")");
-      } else if ((!option.SingleQuote() && sql[i] == '\'')) {
+      } else if ((!options.SingleQuote() && sql[i] == '\'')) {
         result.Add(ErrorCode::kSingleQuote, sql, i,
                    "Use double quotes(\") instead of single quotes(')");
       }
@@ -295,12 +249,12 @@ LinterResult CheckSingleQuotes(absl::string_view sql,
   return result;
 }
 
-LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
+LinterResult CheckNames(absl::string_view sql, const LinterOptions &options) {
   // If parser is not active from config this check won't work.
-  if (!option.IsActive(ErrorCode::kParseFailed, -1)) return LinterResult();
+  if (!options.IsActive(ErrorCode::kParseFailed, -1)) return LinterResult();
 
   return ASTNodeRule([](const ASTNode *node, const absl::string_view &sql,
-                        const LinterOptions &option) -> LinterResult {
+                        const LinterOptions &options) -> LinterResult {
            LinterResult result;
            if (node->node_kind() == AST_IDENTIFIER) {
              if (node->parent() == nullptr ||
@@ -318,32 +272,33 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
 
              if (kind == AST_CREATE_TABLE_STATEMENT) {
                if (!IsUpperCamelCase(name) &&
-                   option.IsActive(ErrorCode::kTableName, position))
+                   options.IsActive(ErrorCode::kTableName, position))
                  result.Add(ErrorCode::kTableName, sql, position,
                             "Table names or"
                             " table aliases should be UpperCamelCase.");
 
              } else if (kind == AST_WINDOW_CLAUSE) {
                if (!IsUpperCamelCase(name) &&
-                   option.IsActive(ErrorCode::kWindowName, position))
+                   options.IsActive(ErrorCode::kWindowName, position))
                  result.Add(ErrorCode::kWindowName, sql, position,
                             "Window names should be UpperCamelCase.");
 
              } else if (kind == AST_FUNCTION_DECLARATION) {
                if (!IsUpperCamelCase(name) &&
-                   option.IsActive(ErrorCode::kFunctionName, position))
+                   options.IsActive(ErrorCode::kFunctionName, position))
                  result.Add(ErrorCode::kFunctionName, sql, position,
                             "Function names should be UpperCamelCase.");
 
              } else if (kind == AST_SIMPLE_TYPE) {
                if (!IsAllCaps(name) &&
-                   option.IsActive(ErrorCode::kDataTypeName, position))
+                   options.IsActive(ErrorCode::kDataTypeName, position))
                  result.Add(ErrorCode::kDataTypeName, sql, position,
                             "Simple SQL data types should be all caps.");
 
              } else if (kind == AST_SELECT_COLUMN) {
+               if (parent->node_kind() != AST_ALIAS) return result;
                if (!IsLowerSnakeCase(name) && !IsUpperCamelCase(name) &&
-                   option.IsActive(ErrorCode::kColumnName, position))
+                   options.IsActive(ErrorCode::kColumnName, position))
                  result.Add(ErrorCode::kColumnName, sql, position,
                             "Column names should be lower_snake_case.");
 
@@ -353,58 +308,60 @@ LinterResult CheckNames(absl::string_view sql, const LinterOptions &option) {
                bool isTable = parent->child(1)->node_kind() == AST_TVF_SCHEMA;
 
                if (!isTable && !IsLowerSnakeCase(name) &&
-                   option.IsActive(ErrorCode::kParameterName, position))
+                   options.IsActive(ErrorCode::kParameterName, position))
                  result.Add(ErrorCode::kParameterName, sql, position,
                             "Non-table function parameters should be "
                             "lower_snake_case.");
 
                if (isTable && !IsUpperCamelCase(name) &&
-                   option.IsActive(ErrorCode::kParameterName, position))
+                   options.IsActive(ErrorCode::kParameterName, position))
                  result.Add(ErrorCode::kParameterName, sql, position,
                             "Table or proto function parameters should be "
                             "UpperCamelCase.");
 
              } else if (kind == AST_CREATE_CONSTANT_STATEMENT) {
                if (!IsCapsSnakeCase(name) &&
-                   option.IsActive(ErrorCode::kConstantName, position))
+                   options.IsActive(ErrorCode::kConstantName, position))
                  result.Add(ErrorCode::kConstantName, sql, position,
                             "Constant names should be CAPS_SNAKE_CASE.");
              }
            }
            return result;
          })
-      .ApplyTo(sql, LinterOptions());
+      .ApplyTo(sql, options);
 }
 
-LinterResult CheckJoin(absl::string_view sql, const LinterOptions &option) {
+LinterResult CheckJoin(absl::string_view sql, const LinterOptions &options) {
   // If parser is not active from config this check won't work.
-  if (!option.IsActive(ErrorCode::kParseFailed, -1)) return LinterResult();
+  if (!options.IsActive(ErrorCode::kParseFailed, -1)) return LinterResult();
 
   return ASTNodeRule([](const ASTNode *node, const absl::string_view &sql,
-                        const LinterOptions &option) -> LinterResult {
+                        const LinterOptions &options) -> LinterResult {
            LinterResult result;
            // SingleNodeDebugString also returns the type if there are any.
            // If it is equal to normal kind string, this means join is typeless.
+           int position = GetStartPosition(*node);
            if (node->node_kind() == AST_JOIN &&
+               options.IsActive(ErrorCode::kImport, position) &&
                node->SingleNodeDebugString() == node->GetNodeKindString()) {
-             result.Add(ErrorCode::kJoin, sql,
-                        node->GetParseLocationRange().start().GetByteOffset(),
+             result.Add(ErrorCode::kJoin, sql, position,
                         "Always explicitly indicate the type of join.");
            }
            return result;
          })
-      .ApplyTo(sql, LinterOptions());
+      .ApplyTo(sql, options);
 }
 
-LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
+LinterResult CheckImports(absl::string_view sql, const LinterOptions &options) {
   std::vector<std::string> imports;
   LinterResult result;
   int first_type = 0, second_type = 0;
   for (int i = 0; i < static_cast<int>(sql.size()); ++i) {
     if (IgnoreStrings(sql, &i)) continue;
-    if (IgnoreComments(sql, option, &i)) continue;
+    if (IgnoreComments(sql, options, &i)) continue;
 
     if (i + 6 <= sql.size() && sql.substr(i, 6) == "IMPORT") {
+      if (!options.IsActive(ErrorCode::kImport, i)) continue;
       i += 6;
       std::string word = ConvertToUppercase(GetNextWord(sql, &i));
       if (word == "PROTO" || word == "MODULE") {
@@ -436,8 +393,92 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &option) {
 }
 
 LinterResult CheckExpressionParantheses(absl::string_view sql,
-                                        const LinterOptions &option) {
+                                        const LinterOptions &options) {
+  return ASTNodeRule([](const ASTNode *node, const absl::string_view &sql,
+                        const LinterOptions &options) -> LinterResult {
+           LinterResult result;
+           if (node->node_kind() == AST_OR_EXPR ||
+               node->node_kind() == AST_AND_EXPR) {
+             if (node->parent() == nullptr) return result;
+             const ASTNode *parent = node->parent();
+
+             if (parent->node_kind() == AST_OR_EXPR ||
+                 parent->node_kind() == AST_AND_EXPR) {
+               if (parent->node_kind() == node->node_kind()) return result;
+               int pos = node->GetParseLocationRange().start().GetByteOffset();
+               int start = pos - 1;
+               int end = node->GetParseLocationRange().end().GetByteOffset();
+
+               if (IgnoreSpacesBackward(sql, &start) ||
+                   IgnoreSpacesForward(sql, &end) || sql[start] != '(' ||
+                   sql[end] != ')')
+                 if (options.IsActive(ErrorCode::kExpressionParanteses, pos))
+                   result.Add(ErrorCode::kExpressionParanteses, sql, pos,
+                              "Use parantheses between consequtive AND and OR "
+                              "operators");
+             }
+           }
+           return result;
+         })
+      .ApplyTo(sql, options);
+}
+
+LinterResult CheckCountStar(absl::string_view sql,
+                            const LinterOptions &options) {
   LinterResult result;
+  for (int i = 0; i < static_cast<int>(sql.size()); i++) {
+    IgnoreComments(sql, options, &i);
+    IgnoreStrings(sql, &i);
+    if (i + 5 < static_cast<int>(sql.size()) &&
+        absl::EqualsIgnoreCase(sql.substr(i, 5), "COUNT")) {
+      i += 5;
+      if (IgnoreSpacesForward(sql, &i)) continue;
+      if (sql[i] != '(') continue;
+      i++;
+      if (IgnoreSpacesForward(sql, &i)) continue;
+      if (sql[i] != '1') continue;
+      i++;
+      if (IgnoreSpacesForward(sql, &i)) continue;
+      if (sql[i] != ')') continue;
+
+      if (options.IsActive(ErrorCode::kCountStar, i))
+        result.Add(ErrorCode::kCountStar, sql, i,
+                   "Use COUNT(*) instead of COUNT(1)");
+    }
+  }
+  return result;
+}
+
+LinterResult CheckKeywordNamedIdentifier(absl::string_view sql,
+                                         const LinterOptions &options) {
+  LinterResult result;
+  std::vector<ParseToken> keywords =
+      GetKeywords(sql, ErrorCode::kKeywordIdentifier);
+  std::vector<const ASTNode *> identifiers = GetIdentifiers(sql, options);
+  int index = 0;
+  for (auto &token : keywords) {
+    // Two pointer algorithm to reduce complexity O(N^2) to O(N)
+    while (index < identifiers.size() && IsBefore(identifiers[index], token))
+      index++;
+
+    // The Identifier is also a keyword
+    if (index < identifiers.size() && IsTheSame(identifiers[index], token)) {
+      int position = token.GetLocationRange().start().GetByteOffset();
+      if (options.IsActive(ErrorCode::kKeywordIdentifier, position))
+        result.Add(
+            ErrorCode::kKeywordIdentifier, sql, position,
+            absl::StrCat("Identifier `", token.GetImage(),
+                         "` is an SQL keyword. Change the name or escape with "
+                         "backticks (`)"));
+    }
+  }
+  return result;
+}
+
+LinterResult CheckSpecifyTable(absl::string_view sql,
+                               const LinterOptions &options) {
+  LinterResult result;
+
   return result;
 }
 

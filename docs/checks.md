@@ -73,11 +73,11 @@ SELECT *;
 
 -- Here, 'FROM' keyword consists of uppercase and lowercase letters,
 -- which will cause a lint error.
-SELECT A From B;
+SELECT a From B;
 ```
 **Linter Output**
 ```
-In line 6, column 10: All keywords should be uppercase [consistent-letter-case]
+In line 6, column 10: Keyword 'From' should be all uppercase [consistent-letter-case]
 ```
 ## consistent-comment-style
 SQL engines support different styles of single-line comments: '#', '//', and '--'. Only one of them should be used consistently.
@@ -303,5 +303,57 @@ In line 3, column 14: PROTO and MODULE inputs should be in seperate groups. [imp
 In line 3, column 21: "random" is already defined. [imports]
 ```
 
+## expression-parantheses
+Use parathenthesis to highlight the order when there are multiple Boolean operators of different types.
 
+**Example**
+```sql
+-- Here is ok because they are the same type.
+SELECT D WHERE a AND b AND c;
 
+-- Here is an invalid usage of operators.
+SELECT D WHERE a AND b OR c; -- line 5
+
+-- It can be fixed by adding paratheses.
+SELECT D WHERE a AND (b OR c);
+```
+
+**Linter Output**
+```
+In line 5, column 16: Use parantheses between consequtive AND and OR operators. [expression-parantheses]
+```
+
+## count-star
+Prefer COUNT(*) over COUNT(1). They have the same functionality.
+
+**Example**
+```sql
+-- Simple Example
+SELECT COUNT(1); -- line 2
+SELECT COUNT(*); -- line 3
+```
+
+**Linter Output**
+```
+In line 2, column 15: Use COUNT(*) instead of COUNT(1) [count-star]
+```
+
+## keyword-identifier
+Do not use ZetaSQL keywords as identifiers (aliases, function arguments, etc.). Change the name or escape with backticks (`).
+
+**Example**
+```sql
+-- Alias name is 'date' which is a SQL keyword.
+SELECT MyTable.travel_date AS Date;
+SELECT MyTable.travel_date AS t_date; -- line 7
+
+-- Escape characters can also be used.
+SELECT type FROM A;
+SELECT `type` FROM A; -- line 7
+```
+
+**Linter Output**
+```
+In line 2, column 31: Identifier `Date` is an SQL keyword. Change the name or escape with backticks (`) [keyword-identifier]
+In line 6, column 8: Identifier `type` is an SQL keyword. Change the name or escape with backticks (`) [keyword-identifier]
+```

@@ -18,20 +18,25 @@
 #define SRC_LINTER_OPTIONS_H_
 
 // This class is for any options that checks will use.
-// Adding configurable option have this steps:
+//
+// Adding configurable option have these steps:
 //    1. Create the variable, along with its UpperCamelCase
 //       getter and setter functions. (Follow the convention.)
 //    2. Add the variable to the 'config.proto' file.
 //    3. Connect proto and option from linter.cc/GetOptionsFromConfig()
 //    4. Update the documentation.
+//
 // This class can also contain other helper varibles that are used in checks.
 
+#include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "src/lint_error.h"
+#include "zetasql/public/parse_helpers.h"
 
 namespace zetasql::linter {
 
@@ -63,48 +68,38 @@ class LinterOptions {
   // INCREASING order.
   void Enable(ErrorCode code, int position);
 
-  // Getter for tab_size_.
-  int TabSize() const { return tab_size_; }
-
-  // Setter for tab_size_.
-  void SetTabSize(char tab_size) { tab_size_ = tab_size; }
-
-  // Getter for line_delimeter_.
-  int LineDelimeter() const { return line_delimeter_; }
-
-  // Setter for line_delimeter_.
-  void SetLineDelimeter(char line_delimeter) {
-    line_delimeter_ = line_delimeter;
-  }
-
-  // Getter for line_limit_.
-  int LineLimit() const { return line_limit_; }
-
-  // Setter for line_limit_.
-  void SetLineLimit(int line_limit) { line_limit_ = line_limit; }
-
-  // Getter for allowed_indent_.
-  char AllowedIndent() const { return allowed_indent_; }
-
-  // Setter for allowed_indent_.
-  void SetAllowedIndent(char allowed_indent) {
-    allowed_indent_ = allowed_indent;
-  }
-
-  // Getter for single_quote_.
-  bool SingleQuote() const { return single_quote_; }
-
-  // Setter for single_quote_.
-  void SetSingleQuote(bool single_quote) { single_quote_ = single_quote; }
-
-  // Getter for all_upper_.
-  bool UpperKeyword() const { return upper_keyword_; }
-
-  // Setter for all_upper_.
-  void SetUpperKeyword(bool upper_keyword) { upper_keyword_ = upper_keyword; }
+  // Adds a single parser output to parset_output_
+  void AddParserOutput(std::unique_ptr<ParserOutput> output);
 
   // Changes if any lint is active from the start.
-  void DisactivateCheck(ErrorCode code);
+  void DisableCheck(ErrorCode code);
+
+  // ---------------------------------- GETTER/SETTER functions
+
+  const std::vector<std::unique_ptr<ParserOutput>> &ParserOutputs() const {
+    return parser_outputs_;
+  }
+
+  bool RememberParser() const { return remember_parser_; }
+  void SetRememberParser(bool val) { remember_parser_ = val; }
+
+  int TabSize() const { return tab_size_; }
+  void SetTabSize(char val) { tab_size_ = val; }
+
+  int LineDelimeter() const { return line_delimeter_; }
+  void SetLineDelimeter(char val) { line_delimeter_ = val; }
+
+  int LineLimit() const { return line_limit_; }
+  void SetLineLimit(int val) { line_limit_ = val; }
+
+  char AllowedIndent() const { return allowed_indent_; }
+  void SetAllowedIndent(char val) { allowed_indent_ = val; }
+
+  bool SingleQuote() const { return single_quote_; }
+  void SetSingleQuote(bool val) { single_quote_ = val; }
+
+  bool UpperKeyword() const { return upper_keyword_; }
+  void SetUpperKeyword(bool val) { upper_keyword_ = val; }
 
  private:
   // Number of characters one tab character(\t) counts.
@@ -133,6 +128,13 @@ class LinterOptions {
   // For each ErrorCode that correspond to a check, it stores
   // options for that check.
   std::map<ErrorCode, CheckOptions> option_map_;
+
+  // Stores whether at least one parser call is made.
+  // It will optimize linter to make only one parser call.
+  bool remember_parser_ = false;
+
+  // If remember_parser_ is enabled, this will hold parser output.
+  std::vector<std::unique_ptr<ParserOutput>> parser_outputs_;
 
   // Name of the sql file.
   absl::string_view filename_ = "";
