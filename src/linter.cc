@@ -23,6 +23,7 @@
 #include <memory>
 #include <streambuf>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_split.h"
@@ -36,6 +37,8 @@
 #include "src/linter_options.h"
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
+#include "zetasql/common/errors.h"
+#include "zetasql/common/status_payload_utils.h"
 
 namespace zetasql::linter {
 
@@ -45,7 +48,8 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
   LinterResult result;
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
-  const LazyRE2 kRegex = {"\\s*(NOLINT|LINT)\\s*\\(([a-z ,-]*)\\)\\s*(.*)\\s*"};
+  const LazyRE2 kRegex = {
+      "\\s*(NOLINT|LINT)\\s*\\(([a-z ,\"-]*)\\)\\s*(.*)\\s*"};
   std::string type = "";
   std::string check_names = "";
   std::string lint_comment = "";
@@ -63,8 +67,9 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
       // The name inside of parantheses is stored in 'check_name'
       // If it is not valid add error, otherwise enable/disable position
       if (!error_map.count(check_name)) {
-        result.Add(ErrorCode::kNoLint, sql, position,
-                   absl::StrCat("Unkown NOLINT error category: ", check_name));
+        result.Add(
+            ErrorCode::kNoLint, sql, position,
+            absl::StrCat("Unkown NOLINT error category: '", check_name, "'"));
       } else {
         const ErrorCode& code = error_map[check_name];
         if (type == "NOLINT")
@@ -104,56 +109,87 @@ LinterResult ParseNoLintComments(absl::string_view sql,
   return result;
 }
 
-LinterOptions GetOptionsFromConfig(Config config, absl::string_view filename) {
-  LinterOptions option(filename);
-  if (config.has_tab_size()) option.SetTabSize(config.tab_size());
+LinterResult CheckParserSucceeds(absl::string_view sql,
+                                 LinterOptions* options) {
+  ParseResumeLocation location = ParseResumeLocation::FromStringView(sql);
+  bool is_the_end = false;
+  int byte_position = -1;
+  LinterResult result;
 
-  if (config.has_end_line()) option.SetLineDelimeter(config.end_line()[0]);
+  while (!is_the_end) {
+    std::unique_ptr<ParserOutput> output;
+    byte_position = location.byte_position();
+    absl::Status status = ParseNextScriptStatement(&location, ParserOptions(),
+                                                   &output, &is_the_end);
+    if (!status.ok()) {
+      if (options->IsActive(ErrorCode::kParseFailed, byte_position)) {
+        ErrorLocation position = internal::GetPayload<ErrorLocation>(status);
+        result.Add(ErrorCode::kParseFailed, position.line(), position.column(),
+                   status.message());
+        return result;
+      }
+    }
+    options->AddParserOutput(std::move(output));
+  }
 
-  if (config.has_line_limit()) option.SetLineLimit(config.line_limit());
+  options->SetRememberParser(true);
+  return result;
+}
+
+void GetOptionsFromConfig(Config config, LinterOptions* options) {
+  if (config.has_tab_size()) options->SetTabSize(config.tab_size());
+
+  if (config.has_end_line()) options->SetLineDelimeter(config.end_line()[0]);
+
+  if (config.has_line_limit()) options->SetLineLimit(config.line_limit());
 
   if (config.has_allowed_indent())
-    option.SetAllowedIndent(config.allowed_indent()[0]);
+    options->SetAllowedIndent(config.allowed_indent()[0]);
 
-  if (config.has_single_quote()) option.SetSingleQuote(config.single_quote());
+  if (config.has_single_quote()) options->SetSingleQuote(config.single_quote());
 
   if (config.has_upper_keyword())
-    option.SetUpperKeyword(config.upper_keyword());
+    options->SetUpperKeyword(config.upper_keyword());
 
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
   for (std::string check_name : config.nolint()) {
     if (error_map.count(check_name)) {
-      option.DisactivateCheck(error_map[check_name]);
+      options->DisableCheck(error_map[check_name]);
     }
   }
-  return option;
 }
 
-LinterResult RunChecks(absl::string_view sql, LinterOptions options) {
+LinterResult RunChecks(absl::string_view sql, LinterOptions* options) {
   ChecksList list = GetAllChecks();
-  LinterResult result = ParseNoLintComments(sql, &options);
-  result.SetFilename(options.Filename());
+  LinterResult result = ParseNoLintComments(sql, options);
+  result.SetFilename(options->Filename());
+
+  // This check should come strictly before others, and able to
+  // change options.
+  result.Add(CheckParserSucceeds(sql, options));
+
   for (auto check : list.GetList()) {
-    result.Add(check(sql, options));
+    result.Add(check(sql, *options));
   }
   return result;
 }
 
 LinterResult RunChecks(absl::string_view sql, Config config,
                        absl::string_view filename) {
-  LinterOptions options = GetOptionsFromConfig(config, filename);
-  return RunChecks(sql, options);
+  LinterOptions options(filename);
+  GetOptionsFromConfig(config, &options);
+  return RunChecks(sql, &options);
 }
 
 LinterResult RunChecks(absl::string_view sql, absl::string_view filename) {
   LinterOptions options(filename);
-  return RunChecks(sql, options);
+  return RunChecks(sql, &options);
 }
 
 LinterResult RunChecks(absl::string_view sql) {
   LinterOptions options;
-  return RunChecks(sql, options);
+  return RunChecks(sql, &options);
 }
 
 }  // namespace zetasql::linter
