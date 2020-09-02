@@ -1,8 +1,0 @@
-WITH
-  table_one_with_a_very_very_very_very_very_long_name_that_forces_a_line_break
-  AS (
-    SELECT 1 AS long_column_name_consisting_of_several_words
-  )
-SELECT long_column_name_consisting_of_several_words
-FROM
-  table_one_with_a_very_very_very_very_very_long_name_that_forces_a_line_break1;

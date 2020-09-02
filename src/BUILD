@@ -27,6 +27,11 @@ cc_library(
     hdrs = [
         "checks_list.h",
     ],
+    copts = [
+        "-Wno-return-type",
+        "-Wno-sign-compare",
+        "-Wno-switch",
+    ],
     deps = [
         ":checks",
         ":linter_options",
@@ -57,6 +62,11 @@ cc_library(
     ],
     hdrs = [
         "lint_error.h",
+    ],
+    copts = [
+        "-Wno-return-type",
+        "-Wno-sign-compare",
+        "-Wno-switch",
     ],
     deps = [
         "@com_google_zetasql//zetasql/public:parse_helpers",
@@ -131,6 +141,11 @@ cc_binary(
     srcs = [
         "runner.cc",
     ],
+    copts = [
+        "-Wno-return-type",
+        "-Wno-sign-compare",
+        "-Wno-switch",
+    ],
     deps = [
         ":config",
         ":linter",
@@ -148,7 +163,6 @@ cc_test(
     deps = [
         ":checks",
         ":checks_list",
-        ":checks_util",
         ":lint_error",
         ":linter_options",
         "@com_google_googletest//:gtest_main",

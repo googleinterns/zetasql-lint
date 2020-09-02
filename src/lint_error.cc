@@ -63,10 +63,6 @@ std::map<std::string, ErrorCode> GetErrorMap() {
       {"constant-name", ErrorCode::kConstantName},
       {"join", ErrorCode::kJoin},
       {"imports", ErrorCode::kImport},
-      {"expression-parantheses", ErrorCode::kExpressionParanteses},
-      {"count-star", ErrorCode::kCountStar},
-      {"keyword-identifier", ErrorCode::kKeywordIdentifier},
-      {"specify-table", ErrorCode::kSpecifyTable},
       {"status", ErrorCode::kStatus}};
   return error_map;
 }
@@ -133,11 +129,6 @@ absl::Status LinterResult::Add(absl::string_view filename, ErrorCode type,
 void LinterResult::Add(ErrorCode type, absl::string_view sql,
                        int character_location, std::string message) {
   Add(filename_, type, sql, character_location, message);
-}
-
-void LinterResult::Add(ErrorCode type, int line, int column,
-                       absl::string_view message) {
-  errors_.push_back(LintError(type, filename_, line, column, message));
 }
 
 void LinterResult::Add(LinterResult result) {
