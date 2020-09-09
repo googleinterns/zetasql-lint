@@ -27,7 +27,6 @@
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
 #include "zetasql/base/statusor.h"
-#include "zetasql/common/errors.h"
 #include "zetasql/public/error_helpers.h"
 #include "zetasql/public/parse_helpers.h"
 #include "zetasql/public/parse_location.h"

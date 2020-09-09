@@ -57,8 +57,9 @@ class RuleVisitor : public NonRecursiveParseTreeVisitor {
   std::function<LinterResult(const ASTNode *, const absl::string_view &,
                              const LinterOptions &)>
       rule_;
-  absl::string_view sql_;
+
   LinterResult result_;
+  absl::string_view sql_;
   const LinterOptions &option_;
 };
 
