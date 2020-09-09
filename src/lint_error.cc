@@ -132,7 +132,8 @@ absl::Status LinterResult::Add(absl::string_view filename, ErrorCode type,
 
 void LinterResult::Add(ErrorCode type, absl::string_view sql,
                        int character_location, std::string message) {
-  Add(filename_, type, sql, character_location, message);
+  // TODO(nastaran): Propagate status.
+  Add(filename_, type, sql, character_location, message).IgnoreError();
 }
 
 void LinterResult::Add(ErrorCode type, int line, int column,

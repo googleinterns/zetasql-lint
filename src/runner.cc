@@ -35,7 +35,7 @@ ABSL_FLAG(std::string, config, "",
           "A prototxt file having configuration options.");
 
 ABSL_FLAG(bool, quick, false,
-          "Read from standart input. It will read one"
+          "Read from standard input. It will read one"
           "statement and continue until reading semicolon ';'");
 
 ABSL_FLAG(bool, print_ast, false, "Print parsed AST for the input queries.");
