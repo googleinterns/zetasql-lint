@@ -37,10 +37,12 @@
 #include "src/linter_options.h"
 #include "zetasql/base/status.h"
 #include "zetasql/base/status_macros.h"
-#include "zetasql/common/errors.h"
-#include "zetasql/common/status_payload_utils.h"
+#include "zetasql/public/error_helpers.h"
 
 namespace zetasql::linter {
+
+const LazyRE2 kLintCommentRegex = {
+    "\\s*(NOLINT|LINT)\\s*\\(([a-z ,\"-]*)\\)\\s*(.*)\\s*"};
 
 LinterResult ParseNoLintSingleComment(absl::string_view line,
                                       const absl::string_view& sql,
@@ -48,13 +50,11 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
   LinterResult result;
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
-  const LazyRE2 kRegex = {
-      "\\s*(NOLINT|LINT)\\s*\\(([a-z ,\"-]*)\\)\\s*(.*)\\s*"};
   std::string type = "";
   std::string check_names = "";
   std::string lint_comment = "";
-  bool matched =
-      RE2::FullMatch(line, *kRegex, &type, &check_names, &lint_comment);
+  bool matched = RE2::FullMatch(line, *kLintCommentRegex, &type, &check_names,
+                                &lint_comment);
 
   // Found enabling or disabling type of comment.
   if (matched) {
@@ -69,7 +69,7 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
       if (!error_map.count(check_name)) {
         result.Add(
             ErrorCode::kNoLint, sql, position,
-            absl::StrCat("Unkown NOLINT error category: '", check_name, "'"));
+            absl::StrCat("Unknown NOLINT error category: '", check_name, "'"));
       } else {
         const ErrorCode& code = error_map[check_name];
         if (type == "NOLINT")
@@ -123,7 +123,9 @@ LinterResult CheckParserSucceeds(absl::string_view sql,
                                                    &output, &is_the_end);
     if (!status.ok()) {
       if (options->IsActive(ErrorCode::kParseFailed, byte_position)) {
-        ErrorLocation position = internal::GetPayload<ErrorLocation>(status);
+        ErrorLocation position;
+        // TODO(nastaran): Check return value and propagate it.
+        GetErrorLocation(status, &position);
         result.Add(ErrorCode::kParseFailed, position.line(), position.column(),
                    status.message());
         return result;

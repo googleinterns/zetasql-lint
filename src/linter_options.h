@@ -26,7 +26,7 @@
 //    3. Connect proto and option from linter.cc/GetOptionsFromConfig()
 //    4. Update the documentation.
 //
-// This class can also contain other helper varibles that are used in checks.
+// This class can also contain other helper variables that are used in checks.
 
 #include <functional>
 #include <map>
@@ -105,7 +105,7 @@ class LinterOptions {
   // Number of characters one tab character(\t) counts.
   int tab_size_ = 4;
 
-  // Delimeter that seperates lines.
+  // Delimeter that separates lines.
   char line_delimeter_ = '\n';
 
   // Maximum number of characters one line should contain.

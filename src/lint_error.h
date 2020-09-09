@@ -77,7 +77,7 @@ class LintError {
   // Returns the raw form of error message, (without position information).
   std::string GetErrorMessage();
 
-  // Returns the position where the error occured,
+  // Returns the position where the error occurred,
   // in a pair with <line, column> format.
   std::pair<int, int> GetPosition() const {
     return std::make_pair(line_, column_);
@@ -93,7 +93,7 @@ class LintError {
   // and status messages of failed checks.
   void PrintError();
 
-  // Returns the line number where the error occured.
+  // Returns the line number where the error occurred.
   int GetLineNumber() const { return line_; }
 
   // Returns the type of the lint error
@@ -104,13 +104,13 @@ class LintError {
   // that corresponds to a specific linter check.
   ErrorCode type_;
 
-  // Name of the file where the lint error occured.
+  // Name of the file where the lint error occurred.
   absl::string_view filename_ = "";
 
-  // Line number where the lint error occured.
+  // Line number where the lint error occurred.
   int line_;
 
-  // Column number where the lint error occured.
+  // Column number where the lint error occurred.
   int column_;
 
   // Error message that will be printed.
@@ -132,7 +132,7 @@ class LinterResult {
 
   explicit LinterResult(const absl::Status& status);
 
-  // This function adds a new lint error that occured in 'sql' in
+  // This function adds a new lint error that occurred in 'sql' in
   // location 'character_location', and 'type' refers to
   // the type of linter check that is failed.
   absl::Status Add(absl::string_view filename, ErrorCode type,
@@ -151,7 +151,7 @@ class LinterResult {
   // It basicly combines two result.
   void Add(LinterResult result);
 
-  // Returns if any lint error occured.
+  // Returns if any lint error occurred.
   bool ok();
 
   // Clears all errors.
@@ -163,7 +163,7 @@ class LinterResult {
   // Returns all Lint Errors that are detected.
   std::vector<LintError> GetErrors() { return errors_; }
 
-  // Returns all Status Errors that are occured.
+  // Returns all Status Errors that are occurred.
   std::vector<absl::Status> GetStatus() { return status_; }
 
   // Output the result in a user-readable format. This function
@@ -177,10 +177,10 @@ class LinterResult {
   void SetFilename(absl::string_view filename) { filename_ = filename; }
 
  private:
-  // All linter errors occured in various lint checks.
+  // All linter errors occurred in various lint checks.
   std::vector<LintError> errors_;
 
-  // All status occured in various lint checks.
+  // All status occurred in various lint checks.
   std::vector<absl::Status> status_;
 
   // Whenever a lint check fails status message occurs. This variable

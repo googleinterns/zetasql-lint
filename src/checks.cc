@@ -370,7 +370,7 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &options) {
         // or MODULE-PROTO-MODULE.
         if (first_type == type && second_type != 0)
           result.Add(ErrorCode::kImport, sql, i,
-                     "PROTO and MODULE inputs should be in seperate groups.");
+                     "PROTO and MODULE inputs should be in separate groups.");
         if (first_type == 0)
           first_type = type;
         else if (second_type == 0 && type != first_type)

@@ -307,7 +307,7 @@ TEST(LinterTest, CheckImports) {
   EXPECT_FALSE(result.ok());
   EXPECT_EQ(result.GetErrors().size(), 1);
   EXPECT_EQ(result.GetErrors()[0].GetErrorMessage(),
-            "PROTO and MODULE inputs should be in seperate groups.");
+            "PROTO and MODULE inputs should be in separate groups.");
 
   result = CheckImports("IMPORT random", options);
   EXPECT_FALSE(result.ok());

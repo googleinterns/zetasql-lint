@@ -144,7 +144,7 @@ bool IgnoreComments(absl::string_view sql, const LinterOptions &options,
 bool IgnoreStrings(absl::string_view sql, int *position);
 
 // Given a position in a sql file, returns first word comes
-// after that positon. The seperator characters in a sql file will be :
+// after that position. The separator characters in a sql file will be :
 // ( ' ', '\t', '\n', ';', ',', '(' ).
 std::string GetNextWord(absl::string_view sql, int *position);
 
@@ -152,8 +152,8 @@ std::string GetNextWord(absl::string_view sql, int *position);
 LinterResult PrintASTTree(absl::string_view sql);
 
 // There are several statements(or parts of them) that
-// should be written in a single line (shouldn't be seperated).
-// Checks if a given line can be seperated or not.
+// should be written in a single line (shouldn't be separated).
+// Checks if a given line can be separated or not.
 bool OneLineStatement(absl::string_view line);
 
 // Checks if a string consists of either all uppercase letters

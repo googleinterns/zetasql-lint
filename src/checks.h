@@ -51,7 +51,7 @@
 namespace zetasql::linter {
 
 // Checks if the number of characters in any line
-// exceed a certain treshold.
+// exceed a certain threshold.
 LinterResult CheckLineLength(absl::string_view sql,
                              const LinterOptions &options);
 

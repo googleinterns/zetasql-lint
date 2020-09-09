@@ -59,6 +59,7 @@ cc_library(
         "lint_error.h",
     ],
     deps = [
+        "@com_google_zetasql//zetasql/public:error_helpers",
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
 )
@@ -87,8 +88,9 @@ cc_library(
     deps = [
         ":checks",
         ":checks_list",
-        ":config",
+        ":config_cc_proto",
         ":lint_error",
+        "@com_google_zetasql//zetasql/public:error_helpers",
         "@com_google_zetasql//zetasql/public:parse_helpers",
         "@com_googlesource_code_re2//:re2",
     ],
@@ -109,11 +111,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "config",
-    deps = [":config_cc_proto"],
-)
-
 cc_proto_library(
     name = "config_cc_proto",
     deps = [":config_proto"],
@@ -132,7 +129,7 @@ cc_binary(
         "runner.cc",
     ],
     deps = [
-        ":config",
+        ":config_cc_proto",
         ":linter",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
