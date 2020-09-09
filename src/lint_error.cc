@@ -28,7 +28,7 @@
 #include "zetasql/base/status_macros.h"
 #include "zetasql/base/statusor.h"
 #include "zetasql/common/errors.h"
-#include "zetasql/common/status_payload_utils.h"
+#include "zetasql/public/error_helpers.h"
 #include "zetasql/public/parse_helpers.h"
 #include "zetasql/public/parse_location.h"
 
@@ -109,7 +109,9 @@ void LinterResult::PrintResult() {
 LinterResult::LinterResult(const absl::Status& status) {
   if (!status.ok()) {
     if (show_status_) {
-      ErrorLocation location = internal::GetPayload<ErrorLocation>(status);
+      ErrorLocation location;
+      // TODO(nastaran): Check return value and propagate it.
+      GetErrorLocation(status, &location);
       LintError t(ErrorCode::kStatus, filename_, location.line(),
                   location.column(), status.message());
       errors_.push_back(t);
