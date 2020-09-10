@@ -59,7 +59,7 @@ class RuleVisitor : public NonRecursiveParseTreeVisitor {
       rule_;
 
   absl::string_view sql_;
-  const LinterOptions &option;
+  const LinterOptions &option_;
   LinterResult result_;
 };
 
