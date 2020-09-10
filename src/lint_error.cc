@@ -145,7 +145,8 @@ void LinterResult::Add(ErrorCode type, int line, int column,
 
 void LinterResult::Add(LinterResult result) {
   for (const LintError error : result.GetErrors()) errors_.push_back(error);
-  for (const absl::Status status : result.GetStatus()) status_.push_back(status);
+  for (const absl::Status status : result.GetStatus())
+    status_.push_back(status);
 }
 
 bool LinterResult::ok() { return errors_.empty() && status_.empty(); }
