@@ -67,14 +67,14 @@ std::string ConvertToUppercase(absl::string_view name) {
 }
 
 bool IsUpperCamelCase(absl::string_view name) {
-  if (name.size() > 0 && !IsUppercase(name[0])) return false;
+  if (!name.empty() && !IsUppercase(name[0])) return false;
   for (char c : name)
     if (c == '_') return false;
   return true;
 }
 
 bool IsLowerCamelCase(absl::string_view name) {
-  if (name.size() > 0 && !IsLowercase(name[0])) return false;
+  if (!name.empty() && !IsLowercase(name[0])) return false;
   for (char c : name)
     if (c == '_') return false;
   return true;
@@ -214,7 +214,7 @@ bool OneLineStatement(absl::string_view line) {
   std::vector<std::string> last_words{"FUNCTION", "EXISTS", "TABLE", "TYPE",
                                       "VIEW",     "=",      "PROTO", "MODULE"};
   for (auto word : absl::StrSplit(line, ' ')) {
-    if (word.size() == 0) continue;
+    if (word.empty()) continue;
     if (finish) return false;
     std::string uppercase_word = ConvertToUppercase(word);
     if (first) {

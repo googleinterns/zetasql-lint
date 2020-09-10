@@ -376,7 +376,7 @@ LinterResult CheckImports(absl::string_view sql, const LinterOptions &options) {
         else if (second_type == 0 && type != first_type)
           second_type = type;
         std::string name = GetNextWord(sql, &i);
-        for (std::string prev_name : imports)
+        for (const std::string prev_name : imports)
           if (prev_name == name) {
             result.Add(ErrorCode::kImport, sql, i,
                        absl::StrCat("\"", name, "\" is already defined."));

@@ -60,6 +60,7 @@ cc_library(
     ],
     deps = [
         "@com_google_zetasql//zetasql/public:error_helpers",
+        "@com_google_zetasql//zetasql/public:error_location_cc_proto",
         "@com_google_zetasql//zetasql/public:parse_helpers",
     ],
 )
