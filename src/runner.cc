@@ -77,7 +77,7 @@ bool HasValidExtension(std::string filename) {
     if (filename[i] == '.') break;
   }
 
-  for (std::string supported_extension : supported_extensions)
+  for (const std::string supported_extension : supported_extensions)
     if (supported_extension == extension) ok = true;
   if (!ok) {
     std::cerr << "Ignoring " << filename << ";  not have a valid extension ("
@@ -110,7 +110,7 @@ void quick_run(Config config) {
 void run(std::vector<std::string> sql_files, Config config) {
   bool debug = absl::GetFlag(FLAGS_print_ast);
   bool runner = true;
-  for (std::string filename : sql_files) {
+  for (const std::string filename : sql_files) {
     // The first argument is './runner'.
     if (runner || !HasValidExtension(filename)) {
       runner = false;

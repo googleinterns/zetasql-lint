@@ -28,6 +28,7 @@
 #include "zetasql/base/status_macros.h"
 #include "zetasql/base/statusor.h"
 #include "zetasql/public/error_helpers.h"
+#include "zetasql/public/error_location.pb.h"
 #include "zetasql/public/parse_helpers.h"
 #include "zetasql/public/parse_location.h"
 
@@ -143,8 +144,8 @@ void LinterResult::Add(ErrorCode type, int line, int column,
 }
 
 void LinterResult::Add(LinterResult result) {
-  for (LintError error : result.GetErrors()) errors_.push_back(error);
-  for (absl::Status status : result.GetStatus()) status_.push_back(status);
+  for (const LintError error : result.GetErrors()) errors_.push_back(error);
+  for (const absl::Status status : result.GetStatus()) status_.push_back(status);
 }
 
 bool LinterResult::ok() { return errors_.empty() && status_.empty(); }

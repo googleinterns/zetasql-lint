@@ -63,7 +63,7 @@ LinterResult ParseNoLintSingleComment(absl::string_view line,
         check_names.end());
 
     std::vector<std::string> names = absl::StrSplit(check_names, ',');
-    for (std::string check_name : names) {
+    for (const std::string check_name : names) {
       // The name inside of parantheses is stored in 'check_name'
       // If it is not valid add error, otherwise enable/disable position
       if (!error_map.count(check_name)) {
@@ -155,7 +155,7 @@ void GetOptionsFromConfig(Config config, LinterOptions* options) {
 
   std::map<std::string, ErrorCode> error_map = GetErrorMap();
 
-  for (std::string check_name : config.nolint()) {
+  for (const std::string check_name : config.nolint()) {
     if (error_map.count(check_name)) {
       options->DisableCheck(error_map[check_name]);
     }
@@ -171,7 +171,7 @@ LinterResult RunChecks(absl::string_view sql, LinterOptions* options) {
   // change options.
   result.Add(CheckParserSucceeds(sql, options));
 
-  for (auto check : list.GetList()) {
+  for (const auto check : list.GetList()) {
     result.Add(check(sql, *options));
   }
   return result;
