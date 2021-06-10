@@ -2,6 +2,8 @@
 
 **This is not an officially supported Google product.**
 
+**NOTE: The project is in the process of being merged into [ZetaSQL repo](https://github.com/google/zetasql).**
+
 ZetaSQL linter is tool that analyzes ZetaSQL queries to flag errors, bugs, and
 stylistic errors.
 
